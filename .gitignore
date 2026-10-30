@@ -1,0 +1,31 @@
+# Build output (rebuild with: bash mac/build.sh)
+build/
+dist/
+obj/
+*.dmg
+*.app/
+
+# Signing and notarization material: never commit
+*.p12
+*.cer
+*.certSigningRequest
+*.mobileprovision
+*.provisionprofile
+*.keychain
+*.keychain-db
+AuthKey_*.p8
+*.p8
+
+# Secrets and local config
+.env
+.env.*
+*.pem
+*.key
+secrets/
+
+# macOS / editors
+.DS_Store
+xcuserdata/
+*.xcuserstate
+.vscode/
+.idea/

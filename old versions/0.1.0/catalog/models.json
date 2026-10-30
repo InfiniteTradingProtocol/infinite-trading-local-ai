@@ -1,0 +1,120 @@
+{
+  "_comment": "Shared by the macOS and Windows apps. sizeGB = download size (Q4 default tag). minRAM = will load (may spill to CPU). recRAM = runs fully on the GPU with the agent's 16k context. rank = quality for the Infinite Agent (higher is better).",
+  "version": 1,
+  "models": [
+    {
+      "id": "llama3.2:1b", "aliases": [], "name": "Llama 3.2", "params": "1B", "publisher": "Meta",
+      "sizeGB": 1.3, "minRAM": 4, "recRAM": 8, "context": 128000, "rank": 18,
+      "tags": ["fast", "tools"],
+      "summary": "Tiny and instant. Good for quick lookups and short summaries; too small for careful trade reasoning."
+    },
+    {
+      "id": "qwen3:1.7b", "aliases": [], "name": "Qwen3", "params": "1.7B", "publisher": "Alibaba",
+      "sizeGB": 1.4, "minRAM": 4, "recRAM": 8, "context": 40000, "rank": 24,
+      "tags": ["fast", "tools", "reasoning"],
+      "summary": "Smallest model with a thinking mode. Runs on almost anything."
+    },
+    {
+      "id": "llama3.2:3b", "aliases": ["llama3.2", "llama3.2:latest"], "name": "Llama 3.2", "params": "3B", "publisher": "Meta",
+      "sizeGB": 2.0, "minRAM": 6, "recRAM": 8, "context": 128000, "rank": 42,
+      "tags": ["fast", "tools"],
+      "summary": "The site's default suggestion. Quick, light, follows instructions well for its size."
+    },
+    {
+      "id": "gemma3:4b", "aliases": [], "name": "Gemma 3", "params": "4B", "publisher": "Google",
+      "sizeGB": 3.3, "minRAM": 8, "recRAM": 8, "context": 128000, "rank": 44,
+      "tags": ["vision"],
+      "summary": "Small multimodal model with clear writing. Can read chart screenshots."
+    },
+    {
+      "id": "qwen3:4b", "aliases": [], "name": "Qwen3", "params": "4B", "publisher": "Alibaba",
+      "sizeGB": 2.5, "minRAM": 6, "recRAM": 8, "context": 256000, "rank": 50,
+      "tags": ["tools", "reasoning"],
+      "summary": "Best quality for 8 GB Macs. Strong at numbers and step-by-step reasoning."
+    },
+    {
+      "id": "llama3.1:8b", "aliases": [], "name": "Llama 3.1", "params": "8B", "publisher": "Meta",
+      "sizeGB": 4.9, "minRAM": 10, "recRAM": 16, "context": 128000, "rank": 58,
+      "tags": ["tools"],
+      "summary": "Dependable all-rounder with a long context window."
+    },
+    {
+      "id": "qwen2.5:7b", "aliases": [], "name": "Qwen2.5", "params": "7B", "publisher": "Alibaba",
+      "sizeGB": 4.7, "minRAM": 10, "recRAM": 16, "context": 32000, "rank": 60,
+      "tags": ["tools"],
+      "summary": "Answers straight away (no thinking step). Good with tables and market data."
+    },
+    {
+      "id": "deepseek-r1:8b", "aliases": [], "name": "DeepSeek-R1", "params": "8B", "publisher": "DeepSeek",
+      "sizeGB": 5.2, "minRAM": 10, "recRAM": 16, "context": 128000, "rank": 54,
+      "tags": ["reasoning"],
+      "summary": "Thinks at length before answering. Thorough, but replies take longer."
+    },
+    {
+      "id": "qwen3:8b", "aliases": [], "name": "Qwen3", "params": "8B", "publisher": "Alibaba",
+      "sizeGB": 5.2, "minRAM": 10, "recRAM": 16, "context": 40000, "rank": 66,
+      "tags": ["tools", "reasoning"],
+      "summary": "Best balance for 16 GB Macs: solid analysis, tool use and speed."
+    },
+    {
+      "id": "mistral-nemo:12b", "aliases": ["mistral-nemo", "mistral-nemo:latest"], "name": "Mistral NeMo", "params": "12B", "publisher": "Mistral AI · NVIDIA",
+      "sizeGB": 7.1, "minRAM": 12, "recRAM": 18, "context": 128000, "rank": 62,
+      "tags": ["tools"],
+      "summary": "Fluent writer with a 128k context. Good for long reports."
+    },
+    {
+      "id": "gemma3:12b", "aliases": [], "name": "Gemma 3", "params": "12B", "publisher": "Google",
+      "sizeGB": 8.1, "minRAM": 14, "recRAM": 18, "context": 128000, "rank": 68,
+      "tags": ["vision"],
+      "summary": "Well-rounded multimodal model. Reads charts and explains them clearly."
+    },
+    {
+      "id": "phi4:14b", "aliases": ["phi4", "phi4:latest"], "name": "Phi-4", "params": "14B", "publisher": "Microsoft",
+      "sizeGB": 9.1, "minRAM": 14, "recRAM": 24, "context": 16000, "rank": 70,
+      "tags": [],
+      "summary": "Strong at maths and logic for its size. Context is exactly the agent's 16k."
+    },
+    {
+      "id": "qwen3:14b", "aliases": [], "name": "Qwen3", "params": "14B", "publisher": "Alibaba",
+      "sizeGB": 9.3, "minRAM": 14, "recRAM": 24, "context": 40000, "rank": 78,
+      "tags": ["tools", "reasoning"],
+      "summary": "Noticeably sharper analysis than 8B models. Great fit for 24 GB Macs."
+    },
+    {
+      "id": "gpt-oss:20b", "aliases": [], "name": "gpt-oss", "params": "20B", "publisher": "OpenAI",
+      "sizeGB": 14, "minRAM": 16, "recRAM": 24, "context": 128000, "rank": 82,
+      "tags": ["tools", "reasoning", "fast"],
+      "summary": "OpenAI's open-weight model. Mixture-of-experts, so it is quick for its quality."
+    },
+    {
+      "id": "gemma3:27b", "aliases": [], "name": "Gemma 3", "params": "27B", "publisher": "Google",
+      "sizeGB": 17, "minRAM": 24, "recRAM": 32, "context": 128000, "rank": 80,
+      "tags": ["vision"],
+      "summary": "Google's largest open Gemma. Excellent writing and chart reading."
+    },
+    {
+      "id": "qwen3:30b", "aliases": [], "name": "Qwen3", "params": "30B (3B active)", "publisher": "Alibaba",
+      "sizeGB": 19, "minRAM": 24, "recRAM": 32, "context": 256000, "rank": 86,
+      "tags": ["tools", "reasoning", "fast"],
+      "summary": "Mixture-of-experts: near-32B quality at small-model speed. Top pick for 32 GB."
+    },
+    {
+      "id": "qwen3:32b", "aliases": [], "name": "Qwen3", "params": "32B", "publisher": "Alibaba",
+      "sizeGB": 20, "minRAM": 28, "recRAM": 40, "context": 40000, "rank": 88,
+      "tags": ["tools", "reasoning"],
+      "summary": "Dense 32B model. The most careful analyst that fits a 48 GB Mac."
+    },
+    {
+      "id": "llama3.3:70b", "aliases": [], "name": "Llama 3.3", "params": "70B", "publisher": "Meta",
+      "sizeGB": 43, "minRAM": 48, "recRAM": 64, "context": 128000, "rank": 84,
+      "tags": ["tools"],
+      "summary": "Large, knowledgeable and steady. Needs a 64 GB Mac; replies are slower."
+    },
+    {
+      "id": "gpt-oss:120b", "aliases": [], "name": "gpt-oss", "params": "120B", "publisher": "OpenAI",
+      "sizeGB": 65, "minRAM": 80, "recRAM": 96, "context": 128000, "rank": 95,
+      "tags": ["tools", "reasoning"],
+      "summary": "Frontier-class open model for 96 GB+ Macs. Closest to hosted AI quality."
+    }
+  ]
+}
