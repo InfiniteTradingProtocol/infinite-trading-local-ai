@@ -150,7 +150,8 @@ lists that commit, the DMG's SHA-256 and the toolchain used.
 
 1. **The file is the one we published:**
    `shasum -a 256 InfiniteAgentManager-<version>.dmg` must match the release.
-2. **It was built by this repository's workflow from that commit** (Sigstore build provenance):
+2. **It was built by this repository's workflow from that commit** (Sigstore build provenance;
+   only while the repository is public, because GitHub doesn't keep attestations for private repositories on our plan):
    ```sh
    gh attestation verify InfiniteAgentManager-<version>.dmg --repo InfiniteTradingProtocol/infinite-local-ai
    ```

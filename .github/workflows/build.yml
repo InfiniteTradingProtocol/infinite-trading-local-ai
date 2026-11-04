@@ -59,8 +59,10 @@ jobs:
             dist/*.dmg
             SHA256SUMS
 
+      # GitHub only stores attestations for public repositories on our plan;
+      # while the repo is private, releases ship with SHA-256 and verify.sh only.
       - name: Attest build provenance
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(github.ref, 'refs/tags/v') && !github.event.repository.private
         uses: actions/attest-build-provenance@v2
         with:
           subject-path: dist/*.dmg
@@ -71,6 +73,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           dmg="${{ steps.hashes.outputs.dmg }}"
+          if [[ "${{ github.event.repository.private }}" == "true" ]]; then
+            attest="# Build-provenance attestation: not available while the repository is private"
+          else
+            attest="gh attestation verify $(basename "$dmg") --repo ${GITHUB_REPOSITORY}   # proves this workflow built it from this commit"
+          fi
           cat > notes.md <<NOTES
           Built by GitHub Actions from commit [\`${GITHUB_SHA}\`](https://github.com/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}) ([workflow run](https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})).
 
@@ -81,7 +88,7 @@ jobs:
           ### Verify
           \`\`\`sh
           shasum -a 256 $(basename "$dmg")     # must match the SHA-256 above
-          gh attestation verify $(basename "$dmg") --repo ${GITHUB_REPOSITORY}   # proves this workflow built it from this commit
+          ${attest}
           git checkout ${GITHUB_REF_NAME} && bash scripts/verify.sh $(basename "$dmg")   # rebuild from source and compare
           \`\`\`
           The app is ad-hoc signed (not notarized): on first open, right-click → Open. See CHANGELOG.md for what changed.

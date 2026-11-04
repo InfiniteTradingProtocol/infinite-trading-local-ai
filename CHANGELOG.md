@@ -6,7 +6,15 @@ The current version is always the one in `mac/`, `catalog/` and `tests/`. From
 `old versions/<version>/`. The 0.2.0 source was checked to rebuild its shipped
 executable exactly (normalized).
 
-## 0.4.0 — 2026-11-03 · Speed estimates and speed test
+## 0.4.1 — 2026-11-03 · Release fix
+
+- CI skips the Sigstore build-provenance attestation while the repository is
+  private: GitHub doesn't store attestations for private repositories on the
+  organization's plan, so the 0.4.0 release run stopped before publishing. The
+  release notes say so, and attestations return automatically when the
+  repository is public. The app is identical to 0.4.0, apart from the version number.
+
+## 0.4.0 — 2026-11-03 · Speed estimates and speed test (tagged, not published)
 
 ### Added
 - **Speed for every model on this Mac.** Each model shows tokens per second
