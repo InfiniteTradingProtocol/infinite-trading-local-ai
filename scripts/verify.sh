@@ -3,7 +3,7 @@
 #
 #   git clone https://github.com/InfiniteTradingProtocol/infinite-local-ai && cd infinite-local-ai
 #   git checkout v<version>                     # the tag the release was built from
-#   bash scripts/verify.sh ~/Downloads/InfiniteAgentManager-<version>.dmg
+#   bash scripts/verify.sh ~/Downloads/InfiniteAgentManager-<version>[-apple-silicon|-intel].dmg
 #
 # It prints the DMG's SHA-256 (compare it with the release page), then rebuilds the
 # executable from this checkout and compares it, per architecture, with the one in
@@ -30,8 +30,13 @@ normalize() { # $1 binary slice → normalized SHA-256
 }
 
 status=0
-for arch in arm64 x86_64; do
-	lipo -thin "$arch" "$shipped" -output "$work/shipped-$arch"
+# Universal DMGs hold both architectures; -apple-silicon / -intel DMGs hold one.
+for arch in $(lipo -archs "$shipped"); do
+	if [[ $(lipo -archs "$shipped") == *" "* ]]; then
+		lipo -thin "$arch" "$shipped" -output "$work/shipped-$arch"
+	else
+		cp "$shipped" "$work/shipped-$arch"
+	fi
 	xcrun swiftc -O -swift-version 5 -module-name InfiniteAgentManager -target "$arch-apple-macos13.0" \
 		mac/Sources/*.swift -o "$work/InfiniteAgentManager-$arch"
 	a=$(normalize "$work/shipped-$arch"); b=$(normalize "$work/InfiniteAgentManager-$arch")

@@ -6,6 +6,16 @@ The current version is always the one in `mac/`, `catalog/` and `tests/`. From
 `old versions/<version>/`. The 0.2.0 source was checked to rebuild its shipped
 executable exactly (normalized).
 
+## 0.4.2 — 2026-11-04 · Apple Silicon and Intel downloads
+
+- Each release now has three DMGs: universal (`InfiniteAgentManager-<v>.dmg`,
+  both architectures), plus a smaller single-architecture DMG for Apple
+  Silicon (`-apple-silicon.dmg`, arm64) and for Intel Macs (`-intel.dmg`,
+  x86_64). The thin executables are byte-identical slices of the universal
+  one, and each DMG is listed in SHA256SUMS.
+- `scripts/verify.sh` accepts any of the three DMGs.
+- The app is unchanged from 0.4.1, apart from the version number.
+
 ## 0.4.1 — 2026-11-03 · Release fix
 
 - CI skips the Sigstore build-provenance attestation while the repository is

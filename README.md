@@ -131,7 +131,10 @@ open "build/Infinite Agent Manager.app"
 ```
 
 This compiles `mac/Sources/*.swift` for arm64 and x86_64 with `swiftc`, merges
-them with `lipo`, signs the app ad-hoc and writes `dist/InfiniteAgentManager-<version>.dmg`.
+them with `lipo`, signs the app ad-hoc and writes three DMGs to `dist/`:
+`InfiniteAgentManager-<version>.dmg` (universal, Apple Silicon and Intel), and
+the smaller `-apple-silicon.dmg` and `-intel.dmg`, each holding one
+architecture's slice of the same executable.
 
 | Path | What |
 |---|---|
@@ -158,7 +161,7 @@ lists that commit, the DMG's SHA-256 and the toolchain used.
 3. **The app inside is exactly this source:**
    ```sh
    git checkout v<version>
-   bash scripts/verify.sh ~/Downloads/InfiniteAgentManager-<version>.dmg
+   bash scripts/verify.sh ~/Downloads/InfiniteAgentManager-<version>.dmg   # or the -apple-silicon / -intel DMG
    ```
    This rebuilds the executable and compares it with the DMG's, per architecture.
    Two parts are normalized first:

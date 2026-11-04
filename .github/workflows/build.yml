@@ -40,7 +40,7 @@ jobs:
       - name: Hashes
         id: hashes
         run: |
-          dmg=$(ls dist/*.dmg)
+          dmg=$(ls dist/*.dmg | grep -vE -- '-(apple-silicon|intel)\.dmg$')
           exe="build/Infinite Agent Manager.app/Contents/MacOS/InfiniteAgentManager"
           (cd dist && shasum -a 256 *.dmg) > SHA256SUMS
           for arch in arm64 x86_64; do
@@ -81,7 +81,7 @@ jobs:
           cat > notes.md <<NOTES
           Built by GitHub Actions from commit [\`${GITHUB_SHA}\`](https://github.com/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}) ([workflow run](https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})).
 
-          **DMG SHA-256:** \`${{ steps.hashes.outputs.sha }}\`
+          **Universal DMG SHA-256:** \`${{ steps.hashes.outputs.sha }}\` (Apple Silicon and Intel). Smaller single-architecture DMGs, \`-apple-silicon\` and \`-intel\`, are listed in SHA256SUMS below.
 
           Toolchain: ${{ steps.toolchain.outputs.xcode }} · ${{ steps.toolchain.outputs.swift }}
 
@@ -97,4 +97,4 @@ jobs:
           $(cat SHA256SUMS)
           \`\`\`
           NOTES
-          gh release create "$GITHUB_REF_NAME" "$dmg" SHA256SUMS --title "Infinite Agent Manager ${GITHUB_REF_NAME#v}" --notes-file notes.md
+          gh release create "$GITHUB_REF_NAME" dist/*.dmg SHA256SUMS --title "Infinite Agent Manager ${GITHUB_REF_NAME#v}" --notes-file notes.md

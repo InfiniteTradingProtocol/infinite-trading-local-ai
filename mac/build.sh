@@ -1,5 +1,6 @@
 #!/bin/bash
-# Builds "Infinite Agent Manager.app" (universal) and dist/InfiniteAgentManager-<version>.dmg.
+# Builds "Infinite Agent Manager.app" (universal) and three DMGs in dist/: InfiniteAgentManager-<version>.dmg
+# (universal), -apple-silicon.dmg (arm64 only) and -intel.dmg (x86_64 only).
 # Only the current version lives in build/ and dist/; past releases are kept in "old versions/" (see CHANGELOG.md).
 #
 #   bash mac/build.sh             ad-hoc signed (what CI publishes, and what scripts/verify.sh rebuilds)
@@ -15,7 +16,7 @@ exe="InfiniteAgentManager"
 version=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" mac/Info.plist)
 build="$PWD/build"
 app="$build/$name.app"
-rm -rf "$build"/*.app "$build/dmg" dist/*.dmg && mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources" dist
+rm -rf "$build"/*.app "$build"/thin-* "$build/dmg" dist/*.dmg && mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources" dist
 
 # Icon: pad the round artwork onto a 1024 canvas so it sits like other macOS icons.
 iconset="$build/AppIcon.iconset" && rm -rf "$iconset" && mkdir -p "$iconset"
@@ -40,24 +41,41 @@ printf '{"version":"%s","commit":"%s","swift":"%s"}\n' "$version" "$commit" \
 	"$(xcrun swiftc --version 2>&1 | head -1 | sed 's/"/\\"/g')" > "$app/Contents/Resources/build-info.json"
 /usr/bin/plutil -lint "$app/Contents/Info.plist" >/dev/null
 
-if [[ -n "${DEVELOPER_ID:-}" ]]; then
-	/usr/bin/codesign --force --options runtime --timestamp --sign "$DEVELOPER_ID" "$app"
-else
-	/usr/bin/codesign --force --sign - "$app"
-fi
-/usr/bin/codesign --verify --strict "$app"
-
-dmg="dist/$exe-$version.dmg"
-mkdir -p "$build/dmg" && /usr/bin/ditto "$app" "$build/dmg/$name.app"
-ln -s /Applications "$build/dmg/Applications"
-cp "$app/Contents/Resources/AppIcon.icns" "$build/dmg/.VolumeIcon.icns"
-/usr/bin/hdiutil create -quiet -volname "$name" -srcfolder "$build/dmg" -fs HFS+ -format UDZO -ov "$dmg"
-
-if [[ -n "${DEVELOPER_ID:-}" ]]; then
-	/usr/bin/codesign --force --timestamp --sign "$DEVELOPER_ID" "$dmg"
-	if [[ -n "${NOTARY_PROFILE:-}" ]]; then
-		xcrun notarytool submit "$dmg" --keychain-profile "$NOTARY_PROFILE" --wait
-		xcrun stapler staple "$dmg"
+sign_app() { # $1 app bundle
+	if [[ -n "${DEVELOPER_ID:-}" ]]; then
+		/usr/bin/codesign --force --options runtime --timestamp --sign "$DEVELOPER_ID" "$1"
+	else
+		/usr/bin/codesign --force --sign - "$1"
 	fi
-fi
-printf 'App: %s\nDMG: %s (%s)\nSHA-256: %s\n' "$app" "$PWD/$dmg" "$(du -h "$dmg" | cut -f1)" "$(shasum -a 256 "$dmg" | cut -d' ' -f1)"
+	/usr/bin/codesign --verify --strict "$1"
+}
+
+make_dmg() { # $1 app bundle, $2 dmg path
+	local stage="$build/dmg"
+	rm -rf "$stage" && mkdir -p "$stage" && /usr/bin/ditto "$1" "$stage/$name.app"
+	ln -s /Applications "$stage/Applications"
+	cp "$1/Contents/Resources/AppIcon.icns" "$stage/.VolumeIcon.icns"
+	/usr/bin/hdiutil create -quiet -volname "$name" -srcfolder "$stage" -fs HFS+ -format UDZO -ov "$2"
+	if [[ -n "${DEVELOPER_ID:-}" ]]; then
+		/usr/bin/codesign --force --timestamp --sign "$DEVELOPER_ID" "$2"
+		if [[ -n "${NOTARY_PROFILE:-}" ]]; then
+			xcrun notarytool submit "$2" --keychain-profile "$NOTARY_PROFILE" --wait
+			xcrun stapler staple "$2"
+		fi
+	fi
+	printf 'DMG: %s (%s) SHA-256 %s\n' "$PWD/$2" "$(du -h "$2" | cut -f1)" "$(shasum -a 256 "$2" | cut -d' ' -f1)"
+}
+
+# Universal (Apple Silicon + Intel), plus a smaller single-architecture DMG for each.
+# The thin executables are byte-identical slices of the universal one.
+sign_app "$app"
+make_dmg "$app" "dist/$exe-$version.dmg"
+for arch in arm64 x86_64; do
+	label=$([[ $arch == arm64 ]] && echo apple-silicon || echo intel)
+	thin="$build/thin-$arch/$name.app"
+	rm -rf "$build/thin-$arch" && mkdir -p "$build/thin-$arch" && /usr/bin/ditto "$app" "$thin"
+	/usr/bin/lipo -thin "$arch" "$app/Contents/MacOS/$exe" -output "$thin/Contents/MacOS/$exe"
+	sign_app "$thin"
+	make_dmg "$thin" "dist/$exe-$version-$label.dmg"
+done
+printf 'App: %s\n' "$app"
