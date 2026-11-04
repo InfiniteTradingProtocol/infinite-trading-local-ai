@@ -17,6 +17,15 @@ enum Theme {
     static let dim = Color.white.opacity(0.55)
     static let accent = LinearGradient(colors: [violet, magenta], startPoint: .leading, endPoint: .trailing)
 
+    static func speedColor(_ t: SpeedEstimate.Tier) -> Color {
+        switch t {
+        case .fast: return green
+        case .ok: return cyan
+        case .slow: return amber
+        case .veryslow: return red
+        }
+    }
+
     static func fitColor(_ f: Fit) -> Color {
         switch f {
         case .great: return green
@@ -103,6 +112,11 @@ struct Bar: View {
         .frame(height: 5)
         .animation(.easeOut(duration: 0.3), value: fraction)
     }
+}
+
+/// The catalog's "fast" tag is relative to model size; hide it where this Mac makes the model slow.
+func shownTags(_ m: ModelInfo, _ est: SpeedEstimate) -> [String] {
+    est.tier >= .ok ? m.tags : m.tags.filter { $0 != "fast" }
 }
 
 func tagChip(_ tag: String) -> Chip {
@@ -192,6 +206,33 @@ struct SpecsCard: View {
                 spec("bolt.horizontal", "For models", "≈ \(Int(s.gpuBudgetGB)) GB" + (s.appleSilicon ? " on GPU" : " on CPU"))
                 spec("internaldrive", "Free disk", formatGB(s.freeDiskGB))
                 spec("apple.logo", "macOS", s.osVersion)
+                Divider().overlay(Theme.stroke)
+                HStack {
+                    Image(systemName: "speedometer").frame(width: 18).foregroundStyle(Theme.violet)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Speed").foregroundStyle(Theme.dim)
+                        Text(app.machine.source == "measured"
+                             ? "Measured with \(app.machine.measuredWith ?? "a model")"
+                             : "Estimated for this chip")
+                            .font(.system(size: 9.5)).foregroundStyle(Theme.dim.opacity(0.8))
+                    }
+                    Spacer()
+                    if let b = app.benchmarking {
+                        ProgressView().controlSize(.small).scaleEffect(0.7).help("Testing \(b)…")
+                    } else {
+                        Button(app.machine.source == "measured" ? "Retest" : "Test speed") {
+                            Task { await app.speedTest() }
+                        }
+                        .buttonStyle(GhostButton(tint: Theme.violet))
+                        .disabled(!app.running || !app.hasModel)
+                        .help("Runs a model you already have for about a minute and measures real speed")
+                    }
+                }
+                .font(.system(size: 12))
+                if app.benchmarking != nil {
+                    Text("Testing \(app.benchmarking ?? "")… (about a minute)")
+                        .font(.system(size: 10.5)).foregroundStyle(Theme.dim)
+                }
                 if app.osTooOld {
                     Text("Ollama needs macOS \(Ollama.minMacOS) or newer.")
                         .font(.system(size: 11)).foregroundStyle(Theme.red)
@@ -298,7 +339,9 @@ struct LibraryView: View {
         app.models.filter { m in
             let f = fit(m, on: app.specs, installed: app.isInstalled(m))
             switch filter {
-            case .fits: if f < .slow && !app.isInstalled(m) { return false }
+            case .fits:
+                if f < .slow && !app.isInstalled(m) { return false }
+                if app.estimate(m).tier == .veryslow && !app.isInstalled(m) { return false }
             case .installed: if !app.isInstalled(m) { return false }
             case .all: break
             }
@@ -337,6 +380,15 @@ struct LibraryView: View {
                     if shown.isEmpty {
                         Text(filter == .installed ? "No catalog models installed yet." : "No models match.")
                             .foregroundStyle(Theme.dim).padding(30)
+                    }
+                }
+
+                if !app.otherInstalled.isEmpty && filter != .fits {
+                    Text("Also installed").font(.system(size: 14, weight: .semibold)).padding(.top, 6)
+                    Text("Models you pulled outside the catalog. They work with the Infinite Agent too.")
+                        .font(.system(size: 11.5)).foregroundStyle(Theme.dim)
+                    VStack(spacing: 8) {
+                        ForEach(app.otherInstalled, id: \.name) { OtherModelRow(installed: $0) }
                     }
                 }
 
@@ -389,8 +441,22 @@ struct Hero: View {
             }
             Text(model.summary).font(.system(size: 13.5)).foregroundStyle(.white.opacity(0.85))
             Text(why).font(.system(size: 12)).foregroundStyle(Theme.dim)
+            let est = app.estimate(model)
+            HStack(spacing: 8) {
+                Image(systemName: "speedometer").foregroundStyle(Theme.speedColor(est.tier))
+                Text("On this Mac: \(est.label) · \(est.detail)")
+                    .font(.system(size: 12, weight: .medium)).foregroundStyle(Theme.speedColor(est.tier))
+                if !est.measured {
+                    Text(app.machine.source == "measured" ? "estimated from your speed test" : "estimate; run Test speed to measure")
+                        .font(.system(size: 11)).foregroundStyle(Theme.dim)
+                }
+            }
+            if let w = est.warning {
+                Text(w).font(.system(size: 11.5)).foregroundStyle(Theme.speedColor(est.tier))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             HStack(spacing: 6) {
-                ForEach(model.tags, id: \.self) { tagChip($0) }
+                ForEach(shownTags(model, est), id: \.self) { tagChip($0) }
                 Chip(text: "\(formatGB(model.sizeGB)) download")
                 Chip(text: "\(model.context / 1000)k context")
             }
@@ -464,9 +530,11 @@ struct ModelRow: View {
     let model: ModelInfo
     @State private var hover = false
     @State private var confirmRemove = false
+    @State private var confirmSlow = false
 
     var body: some View {
         let installed = app.isInstalled(model)
+        let est = app.estimate(model)
         let f = fit(model, on: app.specs, installed: installed)
         let job = app.pulls[model.id]
         let isRec = app.recommended?.id == model.id
@@ -489,8 +557,8 @@ struct ModelRow: View {
                 }
                 Text(model.summary).font(.system(size: 12)).foregroundStyle(.white.opacity(0.75)).lineLimit(2)
                 HStack(spacing: 5) {
-                    ForEach(model.tags, id: \.self) { tagChip($0) }
-                    Text("\(model.id) · needs \(Int(model.recRAM)) GB for full speed")
+                    ForEach(shownTags(model, est), id: \.self) { tagChip($0) }
+                    Text("\(model.id) · \(est.detail)").lineLimit(1)
                         .font(.system(size: 10.5, design: .monospaced)).foregroundStyle(Theme.dim.opacity(0.8))
                         .padding(.leading, 4)
                 }
@@ -509,15 +577,31 @@ struct ModelRow: View {
                 HStack(spacing: 6) {
                     if installed { Chip(text: "Installed", color: Theme.green) }
                     else { Chip(text: f.label, color: Theme.fitColor(f)) }
+                    if f > .tooLarge {
+                        Chip(text: est.label, color: Theme.speedColor(est.tier))
+                            .help(est.warning ?? "\(est.measured ? "Measured" : "Estimated"): \(est.detail). Needs \(Int(model.recRAM)) GB for full speed.")
+                    }
                     Text(formatGB(app.installedSize(model) ?? model.sizeGB))
                         .font(.system(size: 11.5, weight: .medium)).foregroundStyle(Theme.dim)
                 }
                 if job != nil {
                     Button("Pause") { app.cancel(model) }.buttonStyle(GhostButton())
                 } else if installed {
-                    Button("Remove") { confirmRemove = true }.buttonStyle(GhostButton(tint: Theme.red))
+                    HStack(spacing: 6) {
+                        let name = app.installed.first { model.names.contains($0.name) }?.name
+                        if app.benchmarking == name && name != nil {
+                            ProgressView().controlSize(.small).scaleEffect(0.7)
+                        } else {
+                            Button { Task { await app.speedTest(name) } } label: { Image(systemName: "speedometer") }
+                                .buttonStyle(GhostButton()).help("Measure this model's speed (about a minute)")
+                                .disabled(app.benchmarking != nil)
+                        }
+                        Button("Remove") { confirmRemove = true }.buttonStyle(GhostButton(tint: Theme.red))
+                    }
                 } else {
-                    Button("Download") { Task { _ = await app.download(model) } }
+                    Button("Download") {
+                        if est.tier == .veryslow { confirmSlow = true } else { Task { _ = await app.download(model) } }
+                    }
                         .buttonStyle(PrimaryButton(compact: true))
                         .disabled(f <= .tooLarge || app.osTooOld)
                 }
@@ -529,6 +613,11 @@ struct ModelRow: View {
             .strokeBorder(isRec ? Theme.magenta.opacity(0.45) : Theme.stroke))
         .onHover { hover = $0 }
         .animation(.easeOut(duration: 0.15), value: hover)
+        .confirmationDialog("\(model.title) will be very slow on this Mac", isPresented: $confirmSlow) {
+            Button("Download anyway") { Task { _ = await app.download(model) } }
+        } message: {
+            Text(est.warning ?? "")
+        }
         .confirmationDialog("Remove \(model.title)?", isPresented: $confirmRemove) {
             Button("Remove", role: .destructive) { Task { await app.remove(model) } }
         } message: {
@@ -605,5 +694,46 @@ struct JevCard: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// An installed model that isn't in the catalog: size, speed, test and remove.
+struct OtherModelRow: View {
+    @EnvironmentObject var app: AppModel
+    let installed: Ollama.Installed
+    @State private var confirmRemove = false
+
+    var body: some View {
+        let info = app.info(for: installed)
+        let est = app.estimate(info)
+        HStack(spacing: 12) {
+            Image(systemName: "shippingbox").foregroundStyle(Theme.violet).frame(width: 22)
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 8) {
+                    Text(installed.name).font(.system(size: 13, weight: .semibold))
+                    Text(installed.details?.parameter_size ?? "").font(.system(size: 11.5)).foregroundStyle(Theme.violet)
+                }
+                Text(est.detail).font(.system(size: 10.5, design: .monospaced)).foregroundStyle(Theme.dim)
+            }
+            Spacer()
+            Chip(text: est.label, color: Theme.speedColor(est.tier)).help(est.warning ?? est.detail)
+            Text(formatGB(info.sizeGB)).font(.system(size: 11.5, weight: .medium)).foregroundStyle(Theme.dim)
+            if app.benchmarking == installed.name {
+                ProgressView().controlSize(.small).scaleEffect(0.7)
+            } else {
+                Button { Task { await app.speedTest(installed.name) } } label: { Image(systemName: "speedometer") }
+                    .buttonStyle(GhostButton()).disabled(app.benchmarking != nil)
+                    .help("Measure this model's speed (about a minute)")
+            }
+            Button("Remove") { confirmRemove = true }.buttonStyle(GhostButton(tint: Theme.red))
+        }
+        .padding(12)
+        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.white.opacity(0.04)))
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Theme.stroke))
+        .confirmationDialog("Remove \(installed.name)?", isPresented: $confirmRemove) {
+            Button("Remove", role: .destructive) { Task { await app.remove(name: installed.name) } }
+        } message: {
+            Text("Frees \(formatGB(info.sizeGB)).")
+        }
     }
 }

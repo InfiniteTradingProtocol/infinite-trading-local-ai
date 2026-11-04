@@ -20,8 +20,16 @@ enum Ollama {
     static let minMacOS = 14
 
     struct Installed: Decodable, Hashable {
+        struct Details: Decodable, Hashable { let parameter_size: String? }
         let name: String
         let size: Int64
+        var details: Details?
+
+        /// "3.2B" → 3.2, "494.03M" → 0.494.
+        var paramsB: Double? {
+            guard let p = details?.parameter_size, let n = Double(p.dropLast()) else { return nil }
+            return p.hasSuffix("M") ? n / 1000 : p.hasSuffix("B") ? n : nil
+        }
     }
 
     struct Loaded: Decodable, Hashable {
@@ -107,6 +115,33 @@ enum Ollama {
         var body: [String: Any] = ["model": model, "keep_alive": keepAlive]
         if let context { body["options"] = ["num_ctx": context] }
         _ = try await send(request("api/generate", at: base, method: "POST", body: body, timeout: 600))
+    }
+
+    /// Times a model with Ollama's own counters: a cold run for prompt speed
+    /// (a fresh nonce defeats the prompt cache) and a warm run for generation.
+    static func benchmark(_ model: String, at base: URL = base) async throws -> Benchmark {
+        struct R: Decodable {
+            let prompt_eval_count: Double?, prompt_eval_duration: Double?
+            let eval_count: Double?, eval_duration: Double?, load_duration: Double?
+        }
+        let para = "Bitcoin traded between 67,200 and 69,850 while ETH lagged, closing 1.8% lower. Funding turned "
+            + "slightly negative, open interest fell 4%, the 20-day average flattened and RSI(14) sits at 47. "
+        func run() async throws -> R {
+            let prompt = "Run \(UUID().uuidString).\n" + String(repeating: para, count: 12)
+                + "\nSummarise the market state in five bullet points."
+            let body: [String: Any] = ["model": model, "prompt": prompt, "stream": false, "keep_alive": "5m",
+                                       "options": ["num_predict": 128, "num_ctx": 4096, "temperature": 0, "seed": 1]]
+            return try JSONDecoder().decode(R.self, from: try await send(
+                request("api/generate", at: base, method: "POST", body: body, timeout: 1800)))
+        }
+        let cold = try await run()
+        let warm = try await run()
+        guard let pc = cold.prompt_eval_count, let pd = cold.prompt_eval_duration, pd > 0,
+              let ec = warm.eval_count, let ed = warm.eval_duration, ed > 0 else {
+            throw Failure("Ollama didn't report timings for \(model).")
+        }
+        return Benchmark(model: model, genTPS: ec / (ed / 1e9), promptTPS: pc / (pd / 1e9),
+                         loadSeconds: (cold.load_duration ?? 0) / 1e9, at: Date())
     }
 
     static func unload(_ model: String, at base: URL) async throws {

@@ -33,6 +33,15 @@ macOS 13+ (Ollama itself needs macOS 14+). Windows and Linux are coming.
    the result with a real CORS request.
 6. Opens the Infinite Agent. On the site, choose Ollama → Connect.
 
+**Speed**: every model shows how fast it will run on *this* Mac: tokens per
+second while writing, time to the first word for the agent's ~3k-token prompt,
+and time for a typical answer. Very slow models are flagged in red, and
+downloading one asks for confirmation. Estimates start from a per-chip table
+(memory bandwidth and GPU FLOPS for M1 to M5 and Intel). **Test speed** runs a
+model you already have through Ollama's own timers, calibrates every estimate
+to your Mac, and records measured speeds per model. See
+[Speed estimates](#speed-estimates).
+
 **Running**: every local model server on the Mac: Ollama, LocalJev (Jev), oMLX,
 llama.cpp, LM Studio, MLX LM, vLLM, KoboldCpp and LocalAI. Each shows port, PID,
 CPU, memory, uptime and how it is managed.
@@ -72,6 +81,42 @@ level, whether the question is answerable, and whether risk is elevated.
 - **What this app does:** detects LocalJev, checks `/ready` and whether the
   site is allowed (CORS), and restarts it or changes its port. It doesn't
   install it.
+
+## Speed estimates
+
+Writing speed is limited by memory bandwidth: each token reads the active
+weights once, plus a fixed per-token cost, so seconds per token ≈ overhead +
+GB per token ÷ effective bandwidth. That's the whole
+model, or only the active experts for mixture-of-experts models such as
+gpt-oss and Qwen3 30B. Reading the prompt is limited by compute: tok/s ≈
+effective FLOPS ÷ (2 × active parameters).
+
+| | Table value | Source |
+|---|---|---|
+| Apple Silicon bandwidth | chip spec × 0.55 | llama.cpp Apple Silicon results (0.45–0.7) |
+| Apple Silicon compute | GPU FP16 TFLOPS × 0.65 | same (prompt processing 0.6–0.7) |
+| Per-token overhead | 8 ms (Apple GPU), 65 ms (Intel CPU) | fitted to the benchmarks below |
+| Intel Macs | 17.3 GB/s, 315 GFLOPS | fitted to an i7-8700B (6-core, DDR4-2666), 1B to 32B |
+
+Models that spill out of Metal's memory share run at about 45% of that speed
+for writing and 35% for prompt processing. Speed tiers: **fast** ≥ 15 tok/s;
+**OK** ≥ 7; **slow** under 7, or over 40 s to the first word; **very slow**
+under 3, or over 2 min to the first word. Expect ±30% until you run the speed
+test.
+
+Measured on the Intel Mac mini this was built on (i7-8700B, 64 GB, Ollama 0.40.13, CPU only):
+
+| Model | Size | Writes (tok/s) | Reads prompt (tok/s) | First word, 3k-token agent prompt | Typical answer (250 tokens) | App estimate (writes) |
+|---|---|---|---|---|---|---|
+| qwen2.5-coder:1.5b | 0.99 GB (1.5B Q4_K_M) | **16.4** | 91 | 33 s | 48 s | 8.2 |
+| llama3.2:1b | 1.32 GB (1.2B Q8_0) | **9.0** | 99 | 30 s | 58 s | 7.1 |
+| llama3.2 (3B) | 2.02 GB (3.2B Q4_K_M) | **5.5** | 52 | 57 s | 1.7 min | 5.5 |
+| qwen2.5-coder:7b | 4.68 GB (7.6B Q4_K_M) | **3.4** | 22 | 2.3 min | 3.5 min | 3.0 |
+| llama3.1 (8B) | 4.92 GB (8.0B Q4_K_M) | **3.4** | 18 | 2.8 min | 4.0 min | 2.9 |
+| qwen2.5-coder:14b | 8.99 GB (14.8B Q4_K_M) | **1.7** | 10 | 4.9 min | 7.3 min | 1.7 |
+| command-r (32B) | 18.72 GB (32.3B Q4_0) | **0.7** | 5 | 10.4 min | 16.5 min | 0.9 |
+
+Reading is 6–10× faster than writing on a CPU, but the agent's first prompt is long, so time to the first word dominates. Follow-up questions reuse Ollama's prompt cache and start much sooner. On Apple Silicon the same models run 5–20× faster on the GPU.
 
 ## Build from source
 
@@ -131,7 +176,7 @@ right-click → Open. Notarized builds will follow when a Developer ID is set up
 
 ```sh
 # Recommendation rules (also run in CI)
-xcrun swiftc -swift-version 5 mac/Sources/Catalog.swift tests/recommend/main.swift -o build/recommend-test && build/recommend-test
+xcrun swiftc -swift-version 5 mac/Sources/{Catalog,Speed}.swift tests/recommend/main.swift -o build/recommend-test && build/recommend-test
 
 # Live control test: restarts, re-ports (11434 → 11435 → 11434), stops and starts
 # the Ollama on this Mac (~1 minute of downtime, restores OLLAMA_HOST)

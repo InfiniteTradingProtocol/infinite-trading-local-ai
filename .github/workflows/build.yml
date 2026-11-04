@@ -31,7 +31,7 @@ jobs:
       - name: Recommendation tests
         run: |
           mkdir -p build
-          xcrun swiftc -swift-version 5 mac/Sources/Catalog.swift tests/recommend/main.swift -o build/recommend-test
+          xcrun swiftc -swift-version 5 mac/Sources/Catalog.swift mac/Sources/Speed.swift tests/recommend/main.swift -o build/recommend-test
           build/recommend-test
 
       - name: Build app and DMG

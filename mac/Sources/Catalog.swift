@@ -8,6 +8,9 @@ struct ModelInfo: Codable, Identifiable, Hashable {
     let aliases: [String]
     let name: String
     let params: String
+    /// Parameters in billions; activeB is set for mixture-of-experts models (per-token).
+    let paramsB: Double?
+    let activeB: Double?
     let publisher: String
     let sizeGB: Double
     let minRAM: Double
@@ -110,12 +113,20 @@ func fit(_ m: ModelInfo, on s: MacSpecs, installed: Bool = false) -> Fit {
 }
 
 /// Highest-ranked model that fits fully; falls back to the best that runs.
-func recommend(_ models: [ModelInfo], for s: MacSpecs, installed: Set<String> = []) -> ModelInfo? {
+/// With a speed estimator, a model that fits but would be very slow here
+/// (under 3 tok/s, or minutes before the first word) is passed over.
+func recommend(_ models: [ModelInfo], for s: MacSpecs, installed: Set<String> = [],
+               speed: ((ModelInfo) -> SpeedEstimate)? = nil) -> ModelInfo? {
     let scored = models.map { ($0, fit($0, on: s, installed: !$0.names.isDisjoint(with: installed))) }
     for wanted in [Fit.great, .ok, .slow] {
-        if let best = scored.filter({ $0.1 == wanted }).max(by: { $0.0.rank < $1.0.rank }) {
-            return best.0
+        let pool = scored.filter { $0.1 == wanted }.map(\.0)
+        guard !pool.isEmpty else { continue }
+        // Skip models that would be very slow here, but keep "slow" ones: on an
+        // Intel CPU a readable 3B beats a fast but much weaker 1B.
+        if let speed, let best = pool.filter({ speed($0).tier > .veryslow }).max(by: { $0.rank < $1.rank }) {
+            return best
         }
+        return pool.max { $0.rank < $1.rank }
     }
     return nil
 }

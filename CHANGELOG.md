@@ -6,6 +6,37 @@ The current version is always the one in `mac/`, `catalog/` and `tests/`. From
 `old versions/<version>/`. The 0.2.0 source was checked to rebuild its shipped
 executable exactly (normalized).
 
+## 0.4.0 — 2026-11-03 · Speed estimates and speed test
+
+### Added
+- **Speed for every model on this Mac.** Each model shows tokens per second
+  while writing, time to the first word for the Infinite Agent's ~3k-token
+  first prompt, and time for a typical 250-token answer (plus thinking time
+  for reasoning models), colored fast / OK / slow / very slow. Estimates use
+  memory bandwidth for writing and compute for reading the prompt, from a
+  per-chip table (M1 to M5 base/Pro/Max/Ultra, and Intel Macs) with a
+  per-token overhead. Intel figures are fitted to benchmarks of 1B–32B models
+  on an i7-8700B.
+- **Speed test.** Runs a model you already have through Ollama's own timers
+  (a cold run for prompt speed, a warm run for writing), calibrates every
+  estimate to this Mac, and shows measured speeds per model. Available in the
+  sidebar, and per installed model.
+- **Warnings.** The recommended model shows its expected speed and a warning
+  when it's slow. Very slow models are hidden from "Fits my Mac" and ask for
+  confirmation before downloading.
+- **Also installed.** Models pulled outside the catalog (for example
+  `qwen2.5-coder`, `command-r`) now appear under Installed and All models,
+  with their speed, a speed test and Remove.
+- README: how the estimates work, plus measured benchmarks for this build Mac.
+
+### Changed
+- The recommendation passes over models that fit in memory but would be very
+  slow (under 3 tok/s, or minutes before the first word). On an M1 with 64 GB,
+  for example, it picks Qwen3 30B (mixture of experts, fast) over dense Qwen3 32B.
+- The catalog's "Fast" tag is hidden where this Mac makes the model slow.
+- The catalog records parameter counts (`paramsB`, plus `activeB` for
+  mixture-of-experts models).
+
 ## 0.3.0 — 2026-10-30 · Open source, Jev, verifiable builds
 
 ### Added
