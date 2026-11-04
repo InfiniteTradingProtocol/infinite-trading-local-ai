@@ -133,7 +133,7 @@ open "build/Infinite Agent Manager.app"
 This compiles `mac/Sources/*.swift` for arm64 and x86_64 with `swiftc`, merges
 them with `lipo`, signs the app ad-hoc and writes three DMGs to `dist/`:
 `InfiniteAgentManager-<version>.dmg` (universal, Apple Silicon and Intel), and
-the smaller `-apple-silicon.dmg` and `-intel.dmg`, each holding one
+the single-architecture `-apple-silicon.dmg` and `-intel.dmg`, each holding one
 architecture's slice of the same executable.
 
 | Path | What |

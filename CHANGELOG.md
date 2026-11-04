@@ -9,7 +9,7 @@ executable exactly (normalized).
 ## 0.4.2 — 2026-11-04 · Apple Silicon and Intel downloads
 
 - Each release now has three DMGs: universal (`InfiniteAgentManager-<v>.dmg`,
-  both architectures), plus a smaller single-architecture DMG for Apple
+  both architectures), plus a single-architecture DMG for Apple
   Silicon (`-apple-silicon.dmg`, arm64) and for Intel Macs (`-intel.dmg`,
   x86_64). The thin executables are byte-identical slices of the universal
   one, and each DMG is listed in SHA256SUMS.

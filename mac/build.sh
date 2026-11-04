@@ -66,7 +66,7 @@ make_dmg() { # $1 app bundle, $2 dmg path
 	printf 'DMG: %s (%s) SHA-256 %s\n' "$PWD/$2" "$(du -h "$2" | cut -f1)" "$(shasum -a 256 "$2" | cut -d' ' -f1)"
 }
 
-# Universal (Apple Silicon + Intel), plus a smaller single-architecture DMG for each.
+# Universal (Apple Silicon + Intel), plus a single-architecture DMG for each (about the same size; the executable is small next to the icon and resources).
 # The thin executables are byte-identical slices of the universal one.
 sign_app "$app"
 make_dmg "$app" "dist/$exe-$version.dmg"
