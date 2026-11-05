@@ -16,6 +16,7 @@ enum Tab: String, CaseIterable {
 final class Nav: ObservableObject {
     @Published var tab: Tab = .library
     @Published var logPath: String?
+    @Published var showChangelog = false
 }
 
 func bytes(_ b: Int64) -> String { b < 1_000_000_000 ? "\(b / 1_000_000) MB" : formatGB(Double(b) / 1e9) }
@@ -186,6 +187,21 @@ struct ServerCard: View {
                 } label: { Label("Logs", systemImage: "text.alignleft") }
                     .buttonStyle(GhostButton())
                 Spacer()
+                if s.engine == .ollama && s.isMain {
+                    Menu {
+                        ForEach(ManagerModel.keepAliveChoices, id: \.value) { c in
+                            Button {
+                                manager.setKeepAlive(c.value, on: s)
+                            } label: {
+                                if c.value == manager.keepAliveDefault { Label(c.label, systemImage: "checkmark") } else { Text(c.label) }
+                            }
+                        }
+                    } label: {
+                        Label("Unload idle: \(ManagerModel.keepAliveLabel(manager.keepAliveDefault))", systemImage: "clock.arrow.circlepath")
+                    }
+                    .menuStyle(.borderlessButton).fixedSize()
+                    .help("How long Ollama keeps a model in memory after its last request (OLLAMA_KEEP_ALIVE). Changing it restarts Ollama.")
+                }
                 if s.engine == .ollama {
                     let idle = s.installed.filter { n in !s.loaded.contains { $0.id == n } && !n.contains("embed") }
                     Menu {
@@ -205,7 +221,7 @@ struct ServerCard: View {
 
             if s.engine == .ollama {
                 if s.loaded.isEmpty {
-                    Text("No models in memory. Ollama loads a model on its first request and unloads it after it has been idle (5 min by default).")
+                    Text("No models in memory. Ollama loads a model on its first request and unloads it after it has been idle for \(ManagerModel.keepAliveLabel(manager.keepAliveDefault).lowercased()). Pin a model to keep it loaded.")
                         .font(.system(size: 11.5)).foregroundStyle(Theme.dim)
                 }
                 ForEach(s.loaded) { LoadedRow(model: $0, server: s) }
@@ -253,6 +269,7 @@ struct LoadedRow: View {
     let server: Server
 
     var expiry: String {
+        if manager.pinned.contains(model.id) { return "Pinned" }
         guard let d = model.info.expires else { return "" }
         let left = d.timeIntervalSinceNow
         if left > 86_400 * 365 { return "Always loaded" }
@@ -267,13 +284,13 @@ struct LoadedRow: View {
         HStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 8) {
-                    Text(m.name).font(.system(size: 13, weight: .semibold))
+                    Text(m.name).font(.system(size: 13, weight: .semibold)).lineLimit(1).fixedSize()
                     Chip(text: gpu >= 0.99 ? "100% GPU" : gpu <= 0.01 ? "CPU only" : "\(Int(gpu * 100))% GPU / \(100 - Int(gpu * 100))% CPU",
                          color: gpu >= 0.99 ? Theme.green : gpu <= 0.01 ? Theme.amber : Theme.cyan)
                     if let c = m.context_length { Chip(text: "\(c / 1024)k ctx") }
                     Chip(text: expiry, color: Theme.dim)
                 }
-                Text(runnerText).font(.system(size: 10.5, design: .monospaced)).foregroundStyle(Theme.dim)
+                Text(runnerText).font(.system(size: 10.5, design: .monospaced)).foregroundStyle(Theme.dim).lineLimit(1)
             }
             Spacer()
             Stat(label: "Size", value: bytes(m.size))
@@ -283,12 +300,19 @@ struct LoadedRow: View {
             if busy { ProgressView().controlSize(.small) }
             Button("Reload") { manager.reload(model, on: server) }.buttonStyle(GhostButton(tint: Theme.cyan)).disabled(busy)
             Button("Unload") { manager.unload(model, on: server) }.buttonStyle(GhostButton(tint: Theme.red)).disabled(busy)
+            let isPinned = manager.pinned.contains(model.id)
+            Button { manager.togglePin(model.id, on: server) } label: {
+                Image(systemName: isPinned ? "pin.fill" : "pin")
+            }
+            .buttonStyle(GhostButton(tint: isPinned ? Theme.magenta : .white))
+            .help(isPinned ? "Pinned: kept in memory until you unpin it" : "Pin: never unload this model automatically")
             Menu {
-                ForEach([("5 minutes", "5m"), ("30 minutes", "30m"), ("2 hours", "2h"), ("Always", "-1")], id: \.1) { label, v in
+                ForEach([("5 minutes", "5m"), ("30 minutes", "30m"), ("2 hours", "2h"), ("Until Ollama restarts", "-1")], id: \.1) { label, v in
                     Button(label) { manager.load(m.name, on: server, keepAlive: v, context: m.context_length) }
                 }
             } label: { Image(systemName: "timer") }
-                .menuStyle(.borderlessButton).fixedSize().help("Keep loaded for…")
+                .menuStyle(.borderlessButton).fixedSize().help("Keep loaded once for… (a pin lasts)")
+                .disabled(isPinned)
         }
         .padding(12)
         .background(RoundedRectangle(cornerRadius: 11, style: .continuous).fill(Color.white.opacity(0.04)))

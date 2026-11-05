@@ -133,6 +133,9 @@ func tagChip(_ tag: String) -> Chip {
 
 struct RootView: View {
     @EnvironmentObject var app: AppModel
+    @EnvironmentObject var manager: ManagerModel
+    @EnvironmentObject var updates: UpdateModel
+    @EnvironmentObject var nav: Nav
 
     var body: some View {
         HStack(spacing: 0) {
@@ -151,7 +154,21 @@ struct RootView: View {
         )
         .foregroundStyle(.white)
         .preferredColorScheme(.dark)
-        .onAppear { app.start() }
+        .onAppear {
+            app.start()
+            guard !CommandLine.arguments.contains("--snapshot") else { return }
+            updates.isBusyElsewhere = { [weak app, weak manager] in
+                guard let app, let manager else { return false }
+                return !app.pulls.isEmpty || app.benchmarking != nil || app.ollamaJob != nil
+                    || app.connecting || !manager.busy.isEmpty
+            }
+            updates.start()
+            // Show the changelog once after the app updates to a new version.
+            let d = UserDefaults.standard
+            if let seen = d.string(forKey: "lastSeenVersion"), seen != Updater.current { nav.showChangelog = true }
+            d.set(Updater.current, forKey: "lastSeenVersion")
+        }
+        .sheet(isPresented: $nav.showChangelog) { ChangelogView() }
     }
 }
 
@@ -188,6 +205,8 @@ struct Sidebar: View {
                  : "Finish the three steps above to connect.")
                 .font(.system(size: 10.5)).foregroundStyle(Theme.dim)
                 .fixedSize(horizontal: false, vertical: true)
+            Rectangle().fill(Theme.stroke).frame(height: 1)
+            UpdateFooter()
         }
         .padding(20)
     }
@@ -527,6 +546,7 @@ struct Hero: View {
 
 struct ModelRow: View {
     @EnvironmentObject var app: AppModel
+    @EnvironmentObject var manager: ManagerModel
     let model: ModelInfo
     @State private var hover = false
     @State private var confirmRemove = false
@@ -595,6 +615,14 @@ struct ModelRow: View {
                             Button { Task { await app.speedTest(name) } } label: { Image(systemName: "speedometer") }
                                 .buttonStyle(GhostButton()).help("Measure this model's speed (about a minute)")
                                 .disabled(app.benchmarking != nil)
+                        }
+                        if let name {
+                            let isPinned = manager.pinned.contains(name)
+                            Button { manager.togglePin(name, on: manager.servers.first { $0.isMain }) } label: {
+                                Image(systemName: isPinned ? "pin.fill" : "pin")
+                            }
+                            .buttonStyle(GhostButton(tint: isPinned ? Theme.magenta : .white))
+                            .help(isPinned ? "Pinned: kept in memory, never unloaded automatically" : "Pin: keep this model loaded so replies start sooner")
                         }
                         Button("Remove") { confirmRemove = true }.buttonStyle(GhostButton(tint: Theme.red))
                     }

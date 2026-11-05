@@ -35,7 +35,7 @@ for arch in arm64 x86_64; do
 done
 /usr/bin/lipo -create "$build/$exe-arm64" "$build/$exe-x86_64" -output "$app/Contents/MacOS/$exe"
 cp mac/Info.plist "$app/Contents/Info.plist"
-cp catalog/models.json "$app/Contents/Resources/"
+cp catalog/models.json CHANGELOG.md "$app/Contents/Resources/"
 commit=$(git rev-parse --verify -q HEAD 2>/dev/null || echo unknown)
 printf '{"version":"%s","commit":"%s","swift":"%s"}\n' "$version" "$commit" \
 	"$(xcrun swiftc --version 2>&1 | head -1 | sed 's/"/\\"/g')" > "$app/Contents/Resources/build-info.json"

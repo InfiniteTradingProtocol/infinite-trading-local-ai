@@ -299,7 +299,7 @@ enum Ollama {
 /// `launchctl setenv` lasts until logout, so one LaunchAgent re-applies the
 /// variables this app manages at login.
 enum OllamaEnv {
-    static let keys = ["OLLAMA_ORIGINS", "OLLAMA_HOST"]
+    static let keys = ["OLLAMA_ORIGINS", "OLLAMA_HOST", "OLLAMA_KEEP_ALIVE"]
     static let agentLabel = "io.infinitetrading.agentmanager.ollama-env"
     static let legacyLabels = ["io.infinitetrading.localai.ollama-origins"]
 

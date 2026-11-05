@@ -5,6 +5,7 @@ struct AgentManagerApp: App {
     @StateObject private var app = AppModel()
     @StateObject private var manager = ManagerModel()
     @StateObject private var nav = Nav()
+    @StateObject private var updates = UpdateModel()
 
     var body: some Scene {
         Window("Infinite Agent Manager", id: "main") {
@@ -12,12 +13,18 @@ struct AgentManagerApp: App {
                 .environmentObject(app)
                 .environmentObject(manager)
                 .environmentObject(nav)
+                .environmentObject(updates)
                 .frame(minWidth: 1000, minHeight: 680)
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1120, height: 760)
         .commands {
             CommandGroup(replacing: .newItem) {}
+            CommandGroup(after: .appInfo) {
+                Button("Check for Updates…") { Task { await updates.check(userInitiated: true) } }
+                Button("What's New…") { nav.showChangelog = true }
+                Toggle("Install Updates Automatically", isOn: $updates.autoInstall)
+            }
             CommandMenu("View") {
                 ForEach(Array(Tab.allCases.enumerated()), id: \.offset) { i, tab in
                     Button(tab.rawValue) { nav.tab = tab }.keyboardShortcut(KeyEquivalent(Character("\(i + 1)")))
@@ -59,7 +66,7 @@ enum Entry {
             await model.refresh()
             if ProcessInfo.processInfo.environment["ILA_DEMO"] == "1" { manager.loadDemo() } else { await manager.refresh() }
             let size = NSSize(width: 1120, height: Double(ProcessInfo.processInfo.environment["ILA_HEIGHT"] ?? "") ?? 760)
-            let host = NSHostingView(rootView: RootView().environmentObject(model).environmentObject(manager).environmentObject(nav).frame(width: size.width, height: size.height))
+            let host = NSHostingView(rootView: RootView().environmentObject(model).environmentObject(manager).environmentObject(nav).environmentObject(UpdateModel()).frame(width: size.width, height: size.height))
             let window = NSWindow(contentRect: NSRect(origin: .zero, size: size), styleMask: [.borderless],
                                   backing: .buffered, defer: false)
             window.contentView = host

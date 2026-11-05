@@ -6,6 +6,40 @@ The current version is always the one in `mac/`, `catalog/` and `tests/`. From
 `old versions/<version>/`. The 0.2.0 source was checked to rebuild its shipped
 executable exactly (normalized).
 
+## 0.5.0 — 2026-11-04 · Updates, keep models loaded, What's New
+
+### Added
+- **Automatic updates.** The app checks for a new version at launch and every
+  6 hours. It reads, in order: GitHub releases (when the repository is public),
+  the site's feed at `infinitetrading.io/downloads/latest.json`, or your signed-in
+  GitHub CLI (`gh`), which works while the repository is private. Before
+  installing, it checks:
+  - the published SHA-256 of the download;
+  - a valid signature, the same bundle ID (and the same Developer ID team once
+    the app is notarized), and a higher version.
+
+  It picks this Mac's single-architecture DMG. With **Install Updates
+  Automatically** on (the default), it installs when the window isn't in use
+  and nothing is running: the old version goes to the Trash and the new one
+  relaunches. Otherwise **Restart to update** appears in the sidebar. Every
+  step is recorded in the activity log.
+- **Keep models loaded.**
+  - **Unload idle** on the Ollama server card sets `OLLAMA_KEEP_ALIVE` (5 min,
+    30 min, 1 h, 4 h, 24 h or Never), keeps it across logins and restarts
+    Ollama to apply it.
+  - **Pin** a model, in Running or Library, to keep it in memory until you
+    unpin it. Each request (the site's included) resets a model's idle timer,
+    so the app re-pins after requests. It loads pinned models at the site's
+    16k context, so the first question doesn't trigger a reload.
+- **What's New.** The changelog is in the app (menu: Infinite Agent Manager →
+  What's New…, or the sidebar). It opens once after each update.
+- Sidebar footer: version, update status, Check for Updates.
+- `scripts/publish-site.sh`: copies a release's DMGs to the website and writes
+  `latest.json`.
+
+### Fixed
+- Long model names no longer wrap in the Running tab.
+
 ## 0.4.2 — 2026-11-04 · Apple Silicon and Intel downloads
 
 - Each release now has three DMGs: universal (`InfiniteAgentManager-<v>.dmg`,

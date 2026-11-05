@@ -437,6 +437,11 @@ final class ManagerModel: ObservableObject {
     @Published var error: String?
     @Published var notice: String?
     @Published var scanned = false
+    /// Models kept in memory until unpinned (re-applied after every request).
+    @Published var pinned: Set<String> = Set(UserDefaults.standard.stringArray(forKey: "pinnedModels") ?? [])
+    /// OLLAMA_KEEP_ALIVE: how long Ollama keeps an idle model ("" = Ollama's default, 5 min).
+    @Published var keepAliveDefault = ""
+    private var pinAttempts: [String: Date] = [:]
     private var blobs: [String: String] = [:]
     private var poller: Task<Void, Never>?
     var demo = false
@@ -489,6 +494,8 @@ final class ManagerModel: ObservableObject {
             }
         }
         servers = list
+        keepAliveDefault = await Task.detached { OllamaEnv.get("OLLAMA_KEEP_ALIVE") }.value
+        keepPinned()
         scanned = true
     }
 
@@ -593,6 +600,62 @@ final class ManagerModel: ObservableObject {
         jev.siteAllowed = false
         jev.apiModels = ["jev-latest", "jev-preview"]
         servers = [app, brew, jev, lms]
+    }
+
+    // MARK: Keep models loaded
+
+    static let keepAliveChoices: [(label: String, value: String)] = [
+        ("5 minutes (Ollama default)", ""), ("30 minutes", "30m"), ("1 hour", "1h"),
+        ("4 hours", "4h"), ("24 hours", "24h"), ("Never", "-1"),
+    ]
+
+    static func keepAliveLabel(_ v: String) -> String {
+        keepAliveChoices.first { $0.value == v }?.label.replacingOccurrences(of: " (Ollama default)", with: "") ?? v
+    }
+
+    /// Sets Ollama's default idle timeout for every model, then restarts it to apply.
+    func setKeepAlive(_ value: String, on s: Server) {
+        run("keepalive-\(s.pid)", success: "Ollama now unloads idle models after \(Self.keepAliveLabel(value).lowercased()).") {
+            Activity.log("Setting OLLAMA_KEEP_ALIVE=\(value.isEmpty ? "(default)" : value)")
+            try OllamaEnv.set("OLLAMA_KEEP_ALIVE", value.isEmpty ? nil : value)
+            try await Control.restart(s)
+        }
+    }
+
+    func togglePin(_ name: String, on s: Server?) {
+        if pinned.contains(name) {
+            pinned.remove(name)
+            Activity.log("Unpinned \(name)")
+            // Hand it back to the normal idle timeout.
+            if let s, let base = s.base, s.loaded.contains(where: { $0.id == name }) {
+                let v = keepAliveDefault.isEmpty ? "5m" : keepAliveDefault
+                Task { try? await Ollama.load(name, at: base, keepAlive: v, context: 16384) }
+            }
+        } else {
+            pinned.insert(name)
+            pinAttempts[name] = nil
+            Activity.log("Pinned \(name): kept in memory until unpinned")
+        }
+        UserDefaults.standard.set(Array(pinned), forKey: "pinnedModels")
+        keepPinned()
+    }
+
+    /// Every request (the site's included) resets a model's idle timer to the
+    /// default, so pins are re-applied whenever a pinned model isn't held forever.
+    /// Loads use the site's 16k context so its first request doesn't reload the model.
+    private func keepPinned() {
+        guard !demo, !pinned.isEmpty,
+              let s = servers.first(where: { $0.isMain }), let base = s.base else { return }
+        for name in pinned where s.installed.contains(name) {
+            let loaded = s.loaded.first { $0.id == name }
+            if let exp = loaded?.info.expires, exp.timeIntervalSinceNow > 86_400 * 365 { continue }
+            // Retry a missing model every 5 min (it may not fit); re-pin a loaded one quickly.
+            let wait: TimeInterval = loaded == nil ? 300 : 15
+            if let last = pinAttempts[name], Date().timeIntervalSince(last) < wait { continue }
+            pinAttempts[name] = Date()
+            let ctx = loaded?.info.context_length ?? 16384
+            Task { try? await Ollama.load(name, at: base, keepAlive: "-1", context: ctx) }
+        }
     }
 
     func load(_ name: String, on s: Server, keepAlive: String = "30m", context: Int? = 16384) {

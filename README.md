@@ -42,6 +42,21 @@ model you already have through Ollama's own timers, calibrates every estimate
 to your Mac, and records measured speeds per model. See
 [Speed estimates](#speed-estimates).
 
+**Updates**: checks at launch and every 6 hours.
+- **Sources, in order:** GitHub releases (public repo), the site feed
+  `infinitetrading.io/downloads/latest.json`, then the GitHub CLI if you're
+  signed in (`gh auth login`), which also works while the repository is private.
+- **Checks before installing:** the release's SHA-256, a valid signature, the
+  same bundle ID (and Developer ID team once notarized), and a higher version.
+- **Install:** a helper swaps the app after it quits (old copy to the Trash)
+  and relaunches it. This happens automatically when the window isn't in use,
+  or from **Restart to update**.
+- **Changelog:** What's New shows the bundled `CHANGELOG.md`.
+
+**Keep models loaded**: **Unload idle** sets Ollama's `OLLAMA_KEEP_ALIVE`
+(5 min to Never). A **pin** keeps one model in memory until you unpin it. The
+app re-applies it after each request, because a request resets the idle timer.
+
 **Running**: every local model server on the Mac: Ollama, LocalJev (Jev), oMLX,
 llama.cpp, LM Studio, MLX LM, vLLM, KoboldCpp and LocalAI. Each shows port, PID,
 CPU, memory, uptime and how it is managed.
@@ -61,7 +76,7 @@ service logs, LM Studio, LocalJev and this app's own activity log
 ### What it changes on your Mac
 - `launchctl setenv OLLAMA_ORIGINS …` and, if you change the port, `OLLAMA_HOST`.
 - One LaunchAgent, `~/Library/LaunchAgents/io.infinitetrading.agentmanager.ollama-env.plist`,
-  that re-applies those two variables at login.
+  that re-applies those variables (and `OLLAMA_KEEP_ALIVE`, if you set it) at login.
 - `Ollama.app` in `/Applications` (or `~/Applications`), when you ask it to install Ollama.
 - Its activity log, and `localjev.log` if it restarts LocalJev.
 
