@@ -207,7 +207,26 @@ enum Updater {
         try? FileManager.default.removeItem(at: staged.deletingLastPathComponent())
         try FileManager.default.createDirectory(at: staged.deletingLastPathComponent(), withIntermediateDirectories: true)
         guard shell("/usr/bin/ditto", [src.path, staged.path]).status == 0 else { throw Failure("Couldn't copy the new app.") }
+        try? FileManager.default.removeItem(at: dmg) // the staged app is all that's needed now
         return staged
+    }
+
+    /// Removes downloads, staged apps and the install helper left by past updates.
+    /// Safe at launch: nothing is staged yet, and a running helper has already
+    /// copied its app (the shell keeps its open script after the file is gone).
+    static func cleanUp() {
+        let fm = FileManager.default
+        guard let items = try? fm.contentsOfDirectory(at: workDir, includingPropertiesForKeys: nil), !items.isEmpty else { return }
+        let size = items.reduce(0) { $0 + du($1) }
+        try? fm.removeItem(at: workDir)
+        Activity.log(String(format: "Cleared the update cache (%.0f MB)", Double(size) / 1e6))
+    }
+
+    private static func du(_ url: URL) -> Int {
+        guard let e = FileManager.default.enumerator(at: url, includingPropertiesForKeys: [.fileSizeKey]) else { return 0 }
+        var total = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+        for case let f as URL in e { total += (try? f.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0 }
+        return total
     }
 
     /// Where the running app can be replaced: not on a disk image, in a writable folder.
@@ -274,6 +293,7 @@ final class UpdateModel: ObservableObject {
 
     func start() {
         guard timer == nil else { return }
+        Updater.cleanUp()
         timer = Task { [weak self] in
             try? await Task.sleep(nanoseconds: 8_000_000_000)
             while !Task.isCancelled {
@@ -315,6 +335,7 @@ final class UpdateModel: ObservableObject {
             if userInitiated == false { installIfQuiet() }
         } catch {
             progress = nil
+            try? FileManager.default.removeItem(at: Updater.workDir.appendingPathComponent(u.version))
             status = "Update failed: \(error.localizedDescription)"
             Activity.log("Update failed: \(error.localizedDescription)")
         }

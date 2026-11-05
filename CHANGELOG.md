@@ -6,6 +6,16 @@ The current version is always the one in `mac/`, `catalog/` and `tests/`. From
 `old versions/<version>/`. The 0.2.0 source was checked to rebuild its shipped
 executable exactly (normalized).
 
+## 0.5.2 — 2026-11-05 · Tidier updates
+
+### Fixed
+- Updates no longer leave copies behind. The downloaded disk image is deleted
+  as soon as its app is checked and staged, a failed download is removed, and
+  at launch the app clears anything a past update left in
+  `~/Library/Caches/io.infinitetrading.agentmanager/updates` (logged with the
+  space freed). The previous app version still goes to the Trash, so you can
+  restore it.
+
 ## 0.5.1 — 2026-11-04 · Steadier speed tests
 
 ### Fixed
