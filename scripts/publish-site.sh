@@ -6,7 +6,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 tag="${1:?tag, e.g. v0.5.1}"; site="${2:?path to infinite-trading-frontend}"
-repo="InfiniteTradingProtocol/infinite-local-ai"; out="$site/public/downloads"
+repo="InfiniteTradingProtocol/infinite-trading-local-ai"; out="$site/public/downloads"
 tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
 gh release download "$tag" -R "$repo" -p '*.dmg' -p SHA256SUMS -D "$tmp"
 (cd "$tmp" && grep '\.dmg$' SHA256SUMS | shasum -a 256 -c -)

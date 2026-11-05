@@ -5,10 +5,10 @@ import Foundation
 // Finds, verifies and installs new versions of the app.
 //
 // Sources, first that answers wins:
-//   1. GitHub releases API (anonymous): works when the repository is public.
+//   1. GitHub releases API (anonymous).
 //   2. infinitetrading.io/downloads/latest.json: the site's copy of the release.
-//   3. The GitHub CLI (`gh`) signed in on this Mac: lets the owner update while
-//      the repository is private.
+//   3. The GitHub CLI (`gh`) signed in on this Mac: a fallback when the anonymous
+//      API is rate-limited or blocked.
 // Every download must match the release's SHA-256, carry a valid signature,
 // the same bundle id (and Developer ID team, once signed) and a higher version.
 // The running app is never overwritten in place: a helper script waits for it
@@ -36,7 +36,7 @@ struct AvailableUpdate {
 }
 
 enum Updater {
-    static let repo = "InfiniteTradingProtocol/infinite-local-ai"
+    static let repo = "InfiniteTradingProtocol/infinite-trading-local-ai"
     static let manifestURL = URL(string: "https://www.infinitetrading.io/downloads/latest.json")!
     static var current: String { Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0" }
     static var thisArch: String {
@@ -108,7 +108,7 @@ enum Updater {
            let r = try? JSONDecoder().decode(GhRelease.self, from: d) {
             return (fromGitHub(r, source: .github), notes)
         }
-        notes.append("GitHub: not visible (private repository)")
+        notes.append("GitHub: not reachable")
 
         struct Manifest: Decodable {
             struct File: Decodable { let arch: String; let file: String; let url: String; let sha256: String }

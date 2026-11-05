@@ -1,7 +1,7 @@
 #!/bin/bash
 # Verify a downloaded Infinite Agent Manager DMG against this source tree.
 #
-#   git clone https://github.com/InfiniteTradingProtocol/infinite-local-ai && cd infinite-local-ai
+#   git clone https://github.com/InfiniteTradingProtocol/infinite-trading-local-ai && cd infinite-trading-local-ai
 #   git checkout v<version>                     # the tag the release was built from
 #   bash scripts/verify.sh ~/Downloads/InfiniteAgentManager-<version>[-apple-silicon|-intel].dmg
 #

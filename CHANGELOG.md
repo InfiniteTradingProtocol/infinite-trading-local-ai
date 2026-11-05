@@ -6,6 +6,16 @@ The current version is always the one in `mac/`, `catalog/` and `tests/`. From
 `old versions/<version>/`. The 0.2.0 source was checked to rebuild its shipped
 executable exactly (normalized).
 
+## 0.5.3 — 2026-11-05 · Public repository
+
+### Changed
+- The source moved to
+  [InfiniteTradingProtocol/infinite-trading-local-ai](https://github.com/InfiniteTradingProtocol/infinite-trading-local-ai)
+  and is public. The updater checks the new address (GitHub redirects the old
+  one, so earlier versions still find this update).
+- Releases carry a Sigstore build-provenance attestation again:
+  `gh attestation verify <dmg> --repo InfiniteTradingProtocol/infinite-trading-local-ai`.
+
 ## 0.5.2 — 2026-11-05 · Tidier updates
 
 ### Fixed

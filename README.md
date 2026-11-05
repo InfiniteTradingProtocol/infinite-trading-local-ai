@@ -10,7 +10,7 @@ local model server running on the Mac. No terminal needed.
 does is in this repository, and you can rebuild the app yourself and prove that the
 published DMG came from this source ([Verify a download](#verify-a-download)).
 
-Download: [Releases](https://github.com/InfiniteTradingProtocol/infinite-local-ai/releases/latest) ·
+Download: [Releases](https://github.com/InfiniteTradingProtocol/infinite-trading-local-ai/releases/latest) ·
 Product page: [infinitetrading.io/local-ai](https://www.infinitetrading.io/local-ai) ·
 macOS 13+ (Ollama itself needs macOS 14+). Windows and Linux are coming.
 
@@ -43,9 +43,9 @@ to your Mac, and records measured speeds per model. See
 [Speed estimates](#speed-estimates).
 
 **Updates**: checks at launch and every 6 hours.
-- **Sources, in order:** GitHub releases (public repo), the site feed
+- **Sources, in order:** GitHub releases, the site feed
   `infinitetrading.io/downloads/latest.json`, then the GitHub CLI if you're
-  signed in (`gh auth login`), which also works while the repository is private.
+  signed in (`gh auth login`), for when the anonymous GitHub API is rate-limited.
 - **Checks before installing:** the release's SHA-256, a valid signature, the
   same bundle ID (and Developer ID team once notarized), and a higher version.
 - **Install:** a helper swaps the app after it quits (old copy to the Trash)
@@ -139,8 +139,8 @@ Requirements: macOS 13+ and Xcode or the Command Line Tools (`xcode-select --ins
 There are no third-party dependencies.
 
 ```sh
-git clone https://github.com/InfiniteTradingProtocol/infinite-local-ai
-cd infinite-local-ai
+git clone https://github.com/InfiniteTradingProtocol/infinite-trading-local-ai
+cd infinite-trading-local-ai
 bash mac/build.sh
 open "build/Infinite Agent Manager.app"
 ```
@@ -168,10 +168,10 @@ lists that commit, the DMG's SHA-256 and the toolchain used.
 
 1. **The file is the one we published:**
    `shasum -a 256 InfiniteAgentManager-<version>.dmg` must match the release.
-2. **It was built by this repository's workflow from that commit** (Sigstore build provenance;
-   only while the repository is public, because GitHub doesn't keep attestations for private repositories on our plan):
+2. **It was built by this repository's workflow from that commit** (Sigstore build provenance,
+   from 0.5.3; earlier releases were built while the repository was private and have no attestation):
    ```sh
-   gh attestation verify InfiniteAgentManager-<version>.dmg --repo InfiniteTradingProtocol/infinite-local-ai
+   gh attestation verify InfiniteAgentManager-<version>.dmg --repo InfiniteTradingProtocol/infinite-trading-local-ai
    ```
 3. **The app inside is exactly this source:**
    ```sh
