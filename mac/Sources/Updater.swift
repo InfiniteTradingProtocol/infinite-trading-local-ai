@@ -297,7 +297,8 @@ final class UpdateModel: ObservableObject {
             return
         }
         guard Updater.isNewer(u.version, than: current) else {
-            status = "Up to date (checked via \(u.source.rawValue))"
+            let t = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .short)
+            status = "Up to date · checked \(t) via \(u.source.rawValue)"
             available = nil
             return
         }

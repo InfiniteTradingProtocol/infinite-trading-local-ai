@@ -81,9 +81,16 @@ final class AppModel: ObservableObject {
         }
         benchmarking = pick.name
         defer { benchmarking = nil }
-        Activity.log("Speed test: \(pick.name)")
+        // Other work on the CPU/GPU slows the test down; say so instead of trusting it blindly.
+        var load = [Double](repeating: 0, count: 3)
+        getloadavg(&load, 3)
+        let busy = load[0] > Double(ProcessInfo.processInfo.activeProcessorCount) * 0.5
+        Activity.log(String(format: "Speed test: %@ (load average %.1f)", pick.name, load[0]))
         do {
-            let b = try await Ollama.benchmark(pick.name)
+            let fresh = try await Ollama.benchmark(pick.name)
+            // Keep the fastest run per model: a slower one usually means the Mac was busy.
+            let previous = benchmarks[pick.name]
+            let b = previous.map { $0.genTPS >= fresh.genTPS ? $0 : fresh } ?? fresh
             benchmarks[pick.name] = b
             let catalogModel = models.first { $0.names.contains(pick.name) }
             machine = Speed.calibrate(from: b, model: catalogModel, sizeGB: Double(pick.size) / 1e9,
@@ -92,10 +99,19 @@ final class AppModel: ObservableObject {
             let d = UserDefaults.standard
             d.set(try? JSONEncoder().encode(machine), forKey: Self.machineKey)
             d.set(try? JSONEncoder().encode(benchmarks), forKey: Self.benchmarksKey)
-            notice = String(format: "%@: %.1f tok/s writing, %.0f tok/s reading the prompt. Estimates now use this Mac's measured speed.",
-                            pick.name, b.genTPS, b.promptTPS)
-            Activity.log(String(format: "Speed test %@: gen %.2f tok/s, prompt %.1f tok/s, load %.1f s",
-                                pick.name, b.genTPS, b.promptTPS, b.loadSeconds))
+            var msg = String(format: "%@: %.1f tok/s writing, %.0f tok/s reading the prompt.",
+                             pick.name, fresh.genTPS, fresh.promptTPS)
+            if b != fresh {
+                msg += String(format: " Kept your faster earlier result (%.1f tok/s) for the estimates.", b.genTPS)
+            } else {
+                msg += " Estimates now use this Mac's measured speed."
+            }
+            if busy {
+                msg += " Your Mac was busy during the test, so this is lower than its best; run it again when it's idle."
+            }
+            notice = msg
+            Activity.log(String(format: "Speed test %@: gen %.2f tok/s, prompt %.1f tok/s, load %.1f s%@",
+                                pick.name, fresh.genTPS, fresh.promptTPS, fresh.loadSeconds, busy ? " (Mac busy)" : ""))
         } catch {
             self.error = "Speed test failed: \(error.localizedDescription)"
         }

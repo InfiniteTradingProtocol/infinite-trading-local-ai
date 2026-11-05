@@ -6,6 +6,18 @@ The current version is always the one in `mac/`, `catalog/` and `tests/`. From
 `old versions/<version>/`. The 0.2.0 source was checked to rebuild its shipped
 executable exactly (normalized).
 
+## 0.5.1 — 2026-11-04 · Steadier speed tests
+
+### Fixed
+- A speed test run while the Mac was busy (another model answering, a build)
+  recalibrated every estimate too slow. The test now keeps each model's
+  fastest result for the estimates, and warns when the Mac was busy (load
+  average above half the CPU cores) so you can run it again later.
+
+### Changed
+- The sidebar shows when updates were last checked, and where from.
+- First release installed through the app's own updater.
+
 ## 0.5.0 — 2026-11-04 · Updates, keep models loaded, What's New
 
 ### Added
