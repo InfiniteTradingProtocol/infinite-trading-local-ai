@@ -1,7 +1,7 @@
 #!/bin/bash
 # Builds "Infinite Agent Manager.app" (universal) and three DMGs in dist/: InfiniteAgentManager-<version>.dmg
 # (universal), -apple-silicon.dmg (arm64 only) and -intel.dmg (x86_64 only).
-# Only the current version lives in build/ and dist/; past releases are kept in "old versions/" (see CHANGELOG.md).
+# Only the current version lives in build/ and dist/; pre-repository releases are kept in archive/ (see CHANGELOG.md).
 #
 #   bash mac/build.sh             ad-hoc signed (what CI publishes, and what scripts/verify.sh rebuilds)
 #   DEVELOPER_ID="Developer ID Application: … (TEAM)" NOTARY_PROFILE=<notarytool keychain profile> bash mac/build.sh

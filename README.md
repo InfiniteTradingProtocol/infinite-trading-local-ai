@@ -210,7 +210,7 @@ xcrun swiftc -swift-version 5 mac/Sources/{Catalog,Ollama,Manager}.swift tests/c
 
 `main` holds the current version; [CHANGELOG.md](CHANGELOG.md) lists every
 change. Releases are git tags with a GitHub Release. Source snapshots of the
-versions released before this repository existed are in `old versions/`.
+versions released before this repository existed are in [`archive/`](archive).
 
 ## Catalog
 

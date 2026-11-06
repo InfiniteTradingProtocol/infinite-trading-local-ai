@@ -3,7 +3,7 @@
 The current version is always the one in `mac/`, `catalog/` and `tests/`. From
 0.3.0, every release is a git tag with a GitHub Release built by CI. 0.1.0 and
 0.2.0 were released before this repository existed; their sources are in
-`old versions/<version>/`. The 0.2.0 source was checked to rebuild its shipped
+[`archive/<version>/`](archive). The 0.2.0 source was checked to rebuild its shipped
 executable exactly (normalized).
 
 ## 0.5.3 — 2026-11-05 · Public repository
@@ -193,4 +193,4 @@ Renamed from **Infinite Local AI** (bundle id `io.infinitetrading.agentmanager`)
 First release: Mac specs, model recommendation, 19-model catalog, one-click
 Ollama install (signature-verified), model downloads, approval for
 infinitetrading.io (`OLLAMA_ORIGINS`), Open Infinite Agent.
-Kept in `old versions/0.1.0/`.
+Kept in [`archive/0.1.0/`](archive/0.1.0).
