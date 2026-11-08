@@ -160,7 +160,7 @@ struct RootView: View {
             updates.isBusyElsewhere = { [weak app, weak manager] in
                 guard let app, let manager else { return false }
                 return !app.pulls.isEmpty || app.benchmarking != nil || app.ollamaJob != nil
-                    || app.connecting || !manager.busy.isEmpty
+                    || app.connecting || !manager.busy.isEmpty || ChatModel.shared.streaming
             }
             updates.start()
             // Show the changelog once after the app updates to a new version.
@@ -411,8 +411,6 @@ struct LibraryView: View {
                     }
                 }
 
-                JevCard()
-
                 Text("Models download from ollama.com and run entirely on this Mac. Infinite Trading never sees your prompts unless you send them to the site.")
                     .font(.system(size: 10.5)).foregroundStyle(Theme.dim)
                     .padding(.top, 4)
@@ -442,6 +440,7 @@ struct Banner: View {
 
 struct Hero: View {
     @EnvironmentObject var app: AppModel
+    @EnvironmentObject var nav: Nav
     let model: ModelInfo
 
     var body: some View {
@@ -494,6 +493,13 @@ struct Hero: View {
                     if app.ready && app.isInstalled(model) {
                         Button { app.openAgent() } label: { Label("Open Infinite Agent", systemImage: "arrow.up.forward.app") }
                             .buttonStyle(PrimaryButton())
+                        if let name = app.installed.first(where: { model.names.contains($0.name) })?.name {
+                            Button {
+                                ChatModel.shared.select(ollamaModel: name)
+                                nav.tab = .chat
+                            } label: { Label("Try it in Chat", systemImage: "bubble.left.and.bubble.right") }
+                                .buttonStyle(GhostButton())
+                        }
                         Text("All set. This model is installed and the site is allowed.")
                             .font(.system(size: 12)).foregroundStyle(Theme.green)
                     } else {
@@ -651,77 +657,6 @@ struct ModelRow: View {
         } message: {
             Text("Frees \(formatGB(app.installedSize(model) ?? model.sizeGB)). You can download it again any time.")
         }
-    }
-}
-
-// MARK: Jev
-
-/// Jev isn't an Ollama model: it's a decision API (LocalJev) with its own
-/// requirements and a narrower job, so it gets an explanation, not a download button.
-struct JevCard: View {
-    @EnvironmentObject var app: AppModel
-    @EnvironmentObject var manager: ManagerModel
-    @EnvironmentObject var nav: Nav
-
-    var body: some View {
-        let jev = manager.servers.first { $0.engine == .jev }
-        let canRun = app.specs.appleSilicon && app.specs.memoryGB >= 32
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 10) {
-                Text("Jev").font(.system(size: 18, weight: .bold))
-                Text("decision model · via LocalJev").font(.system(size: 12.5)).foregroundStyle(Theme.violet)
-                Chip(text: "Advanced", color: Theme.amber)
-                Spacer()
-                if let jev {
-                    Chip(text: jev.ready == true ? "Running on port \(jev.apiPort ?? 0)" : "Running, upstream not ready",
-                         color: jev.ready == true ? Theme.green : Theme.amber)
-                } else {
-                    Chip(text: canRun ? "Not running" : "Needs Apple Silicon with 32 GB+", color: canRun ? Theme.dim : Theme.red)
-                }
-            }
-            Text("Jev answers typed questions about a market snapshot instead of writing text. In the Market Scanner's Ask AI it returns a stance (bullish, neutral, bearish or unclear), a conviction level, whether the question is answerable from the data, and whether risk is elevated.")
-                .font(.system(size: 12.5)).foregroundStyle(.white.opacity(0.85)).fixedSize(horizontal: false, vertical: true)
-            HStack(alignment: .top, spacing: 24) {
-                bullets("Good for", Theme.green, [
-                    "Fast, structured second opinions on a chart",
-                    "Consistent verdicts you can compare over time",
-                    "Running fully offline next to Ollama",
-                ])
-                bullets("Limitations", Theme.amber, [
-                    "No explanations or chat: verdicts only",
-                    "Not used by the Infinite Agent (Market Scanner only)",
-                    "Probabilities are self-reported, not calibrated logits",
-                    "Manual setup: Bun 1.2+, an oMLX server and the DiffusionGemma 26B-A4B 4-bit model (≈15 GB, estimated)",
-                    "LocalJev doesn't document CORS; the site needs it to allow infinitetrading.io",
-                ])
-            }
-            HStack(spacing: 10) {
-                Button { NSWorkspace.shared.open(Jev.repo) } label: { Label("LocalJev setup guide", systemImage: "arrow.up.right.square") }
-                    .buttonStyle(GhostButton(tint: Theme.violet))
-                if jev != nil {
-                    Button { nav.tab = .running } label: { Label("Manage", systemImage: "cpu") }.buttonStyle(GhostButton())
-                }
-                Text("This app detects, restarts, re-ports and checks LocalJev; it doesn't install it.")
-                    .font(.system(size: 11)).foregroundStyle(Theme.dim)
-            }
-        }
-        .padding(18)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color.white.opacity(0.045)))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.stroke))
-    }
-
-    func bullets(_ title: String, _ color: Color, _ items: [String]) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text(title.uppercased()).font(.system(size: 10, weight: .bold)).tracking(1).foregroundStyle(color)
-            ForEach(items, id: \.self) { item in
-                HStack(alignment: .top, spacing: 6) {
-                    Circle().fill(color.opacity(0.8)).frame(width: 4, height: 4).padding(.top, 6)
-                    Text(item).font(.system(size: 11.5)).foregroundStyle(.white.opacity(0.8)).fixedSize(horizontal: false, vertical: true)
-                }
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

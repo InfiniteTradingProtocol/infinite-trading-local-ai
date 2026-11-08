@@ -8,9 +8,9 @@ import Foundation
 
 enum Engine: String {
     case ollama = "Ollama", llamaCpp = "llama.cpp", lmStudio = "LM Studio", mlx = "MLX LM",
-         vllm = "vLLM", kobold = "KoboldCpp", localAI = "LocalAI", jev = "Jev (LocalJev)", omlx = "oMLX"
+         vllm = "vLLM", kobold = "KoboldCpp", localAI = "LocalAI", omlx = "oMLX"
 
-    /// `cwd` matters for Bun/Node servers: LocalJev runs as `bun run start` inside its checkout.
+    /// `cwd` is the working directory of Bun/Node servers (shown on their card).
     static func detect(_ command: String, cwd: String? = nil) -> Engine? {
         let c = command.lowercased()
         let exe = URL(fileURLWithPath: String(command.split(separator: " ").first ?? "")).lastPathComponent.lowercased()
@@ -23,8 +23,6 @@ enum Engine: String {
         if c.contains("koboldcpp") { return .kobold }
         if exe == "local-ai" { return .localAI }
         if c.contains("omlx") { return .omlx }
-        if c.contains("localjev") || exe == "jev" || c.contains("jev serve") { return .jev }
-        if ["bun", "node"].contains(exe), let cwd, cwd.lowercased().contains("jev") { return .jev }
         return nil
     }
 }
@@ -74,8 +72,6 @@ struct Server: Identifiable {
     let management: Management
     var cwd: String?
     var version: String?
-    /// Jev: GET /ready answered 200 (the upstream model is available).
-    var ready: Bool?
     /// Answers a request from the site's origin with CORS headers.
     var siteAllowed: Bool?
     var loaded: [LoadedModel] = []
@@ -88,8 +84,8 @@ struct Server: Identifiable {
     var apiPort: Int? { ports.sorted().first }
     var base: URL? { apiPort.map(Ollama.url(port:)) }
     var isMain: Bool { engine == .ollama && ports.contains(Ollama.port) }
-    var canRestart: Bool { management != .manual || engine == .ollama || (engine == .jev && cwd != nil) }
-    var canChangePort: Bool { engine == .ollama || (engine == .jev && cwd != nil) }
+    var canRestart: Bool { management != .manual || engine == .ollama }
+    var canChangePort: Bool { engine == .ollama }
 }
 
 enum Discovery {
@@ -197,13 +193,6 @@ enum Control {
         case .launchd(let label):
             let r = shell("/bin/launchctl", ["kickstart", "-k", "gui/\(uid)/\(label)"])
             guard r.status == 0 else { throw Ollama.Failure("launchctl kickstart \(label) failed: \(r.err.prefix(200))") }
-        case .manual where s.engine == .jev && s.cwd != nil:
-            try await terminate(s.pid, port: port)
-            try spawnJev(s, port: target)
-            guard await waitForHTTP(Ollama.url(port: target).appendingPathComponent("ready"), seconds: 30) else {
-                throw Ollama.Failure("LocalJev didn't come back on port \(target). If its .env sets LOCALJEV_PORT, that value wins; see the LocalJev log.")
-            }
-            return
         case .manual:
             guard s.engine == .ollama else {
                 throw Ollama.Failure("\(s.engine.rawValue) was started by hand; restart it where you launched it.")
@@ -234,15 +223,10 @@ enum Control {
 
     /// Moves an Ollama server to another port via OLLAMA_HOST, then restarts it.
     static func changePort(_ s: Server, to port: Int) async throws {
-        guard s.canChangePort else { throw Ollama.Failure("Only Ollama's and LocalJev's ports can be changed from here.") }
+        guard s.canChangePort else { throw Ollama.Failure("Only Ollama's port can be changed from here.") }
         guard (1024...65535).contains(port) else { throw Ollama.Failure("Pick a port between 1024 and 65535.") }
         if let owner = Discovery.portOwner(port), owner != s.pid {
             throw Ollama.Failure("Port \(port) is already used by pid \(owner).")
-        }
-        if s.engine == .jev {
-            try await restart(s, newPort: port)
-            Activity.log("LocalJev now listens on port \(port)")
-            return
         }
         let previous = OllamaEnv.get("OLLAMA_HOST")
         try OllamaEnv.set("OLLAMA_HOST", port == Ollama.defaultPort ? nil : "127.0.0.1:\(port)")
@@ -267,36 +251,6 @@ enum Control {
         if kill(pid, 0) == 0 { throw Ollama.Failure("Process \(pid) didn't stop.") }
     }
 
-    static let jevLog = URL(fileURLWithPath: NSHomeDirectory() + "/Library/Logs/Infinite Agent Manager/localjev.log")
-
-    /// Re-runs LocalJev's own command in its checkout (Bun loads its .env there).
-    private static func spawnJev(_ s: Server, port: Int) throws {
-        guard let cwd = s.cwd else { return }
-        let parts = s.proc.command.split(separator: " ").map(String.init)
-        let fm = FileManager.default
-        try fm.createDirectory(at: jevLog.deletingLastPathComponent(), withIntermediateDirectories: true)
-        if !fm.fileExists(atPath: jevLog.path) { fm.createFile(atPath: jevLog.path, contents: nil) }
-        let handle = try FileHandle(forWritingTo: jevLog)
-        handle.seekToEndOfFile()
-        let p = Process()
-        let exe = parts.first ?? "bun"
-        p.executableURL = URL(fileURLWithPath: exe.hasPrefix("/") ? exe : (bunPath ?? "/usr/local/bin/bun"))
-        p.arguments = Array(parts.dropFirst())
-        p.currentDirectoryURL = URL(fileURLWithPath: cwd)
-        var env = ProcessInfo.processInfo.environment
-        env["LOCALJEV_PORT"] = String(port)
-        p.environment = env
-        p.standardOutput = handle
-        p.standardError = handle
-        p.standardInput = FileHandle.nullDevice
-        try p.run()
-        Activity.log("Started LocalJev in \(cwd) on port \(port), logging to \(jevLog.path)")
-    }
-
-    static var bunPath: String? {
-        [NSHomeDirectory() + "/.bun/bin/bun", "/opt/homebrew/bin/bun", "/usr/local/bin/bun"]
-            .first { FileManager.default.fileExists(atPath: $0) }
-    }
 
     static func waitForHTTP(_ url: URL, seconds: Int) async -> Bool {
         for _ in 0..<(seconds * 2) {
@@ -327,31 +281,6 @@ enum Control {
     }
 }
 
-// MARK: Jev
-
-/// LocalJev (github.com/githubnext/localjev): a local, Jev-compatible decision API.
-enum Jev {
-    static let defaultPort = 8080
-    static let repo = URL(string: "https://github.com/githubnext/localjev")!
-
-    static func ready(at base: URL) async -> Bool {
-        var r = URLRequest(url: base.appendingPathComponent("ready"))
-        r.timeoutInterval = 3
-        guard let (_, resp) = try? await URLSession.shared.data(for: r) else { return false }
-        return (resp as? HTTPURLResponse)?.statusCode == 200
-    }
-
-    /// Same check the browser makes before the site can call it.
-    static func allowsSite(at base: URL) async -> Bool {
-        var r = URLRequest(url: base.appendingPathComponent("ready"))
-        r.timeoutInterval = 3
-        r.setValue(SiteAccess.origins[0], forHTTPHeaderField: "Origin")
-        guard let (_, resp) = try? await URLSession.shared.data(for: r), let http = resp as? HTTPURLResponse else { return false }
-        let allow = http.value(forHTTPHeaderField: "Access-Control-Allow-Origin") ?? ""
-        return allow == "*" || allow == SiteAccess.origins[0]
-    }
-}
-
 // MARK: Logs
 
 struct LogSource: Identifiable, Hashable {
@@ -375,7 +304,6 @@ struct LogSource: Identifiable, Hashable {
         ]
         list += known.map(LogSource.init).filter { FileManager.default.fileExists(atPath: $0.path) }
         if let lms = newest(in: "\(home)/.lmstudio/server-logs") { list.append(LogSource(name: "LM Studio server", path: lms)) }
-        if FileManager.default.fileExists(atPath: Control.jevLog.path) { list.append(LogSource(name: "LocalJev (started here)", path: Control.jevLog.path)) }
         list.append(LogSource(name: "Agent Manager activity", path: Activity.path.path))
         var seen = Set<String>()
         return list.filter { seen.insert($0.path).inserted }
@@ -485,10 +413,6 @@ final class ManagerModel: ObservableObject {
                 }
                 list[i].loaded = models
                 list[i].orphanRunners = runners
-            } else if list[i].engine == .jev {
-                list[i].ready = await Jev.ready(at: base)
-                list[i].siteAllowed = await Jev.allowsSite(at: base)
-                list[i].apiModels = ["jev-latest", "jev-preview"]
             } else {
                 list[i].apiModels = await openAIModels(at: base)
             }
@@ -535,11 +459,9 @@ final class ManagerModel: ObservableObject {
     }
 
     func changePort(_ s: Server, to port: Int) {
-        let name = s.engine == .jev ? "LocalJev" : "Ollama"
-        let home = s.engine == .jev ? Jev.defaultPort : Ollama.defaultPort
-        let message = (s.isMain || s.engine == .jev) && port != home
-            ? "\(name) now uses port \(port). On the site, set the \(s.engine == .jev ? "Jev" : "Ollama") address to http://127.0.0.1:\(port)."
-            : "\(name) now uses port \(port)."
+        let message = s.isMain && port != Ollama.defaultPort
+            ? "Ollama now uses port \(port). On the site, set the Ollama address to http://127.0.0.1:\(port)."
+            : "Ollama now uses port \(port)."
         run("port-\(s.pid)", success: message) { try await Control.changePort(s, to: port) }
     }
 
@@ -593,13 +515,7 @@ final class ManagerModel: ObservableObject {
                          proc: proc(7741, 6_200_000_000, 12.5, "41:08", "/Applications/LM Studio.app/Contents/MacOS/LM Studio --server"),
                          management: .manual)
         lms.apiModels = ["qwen2.5-coder-7b-instruct-mlx"]
-        var jev = Server(engine: .jev, pid: 9120, ports: [8080],
-                         proc: proc(9120, 120_000_000, 0.3, "12:40", "bun run start"), management: .manual)
-        jev.cwd = "/Users/demo/localjev"
-        jev.ready = true
-        jev.siteAllowed = false
-        jev.apiModels = ["jev-latest", "jev-preview"]
-        servers = [app, brew, jev, lms]
+        servers = [app, brew, lms]
     }
 
     // MARK: Keep models loaded

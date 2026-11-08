@@ -1,6 +1,6 @@
 // Live control test against the Ollama on this Mac: restart, change port and back, stop, start.
 // Interrupts Ollama for ~1 minute in total. Restores OLLAMA_HOST to its original value.
-// swiftc -swift-version 5 mac/Sources/{Catalog,Ollama,Manager}.swift tests/control/main.swift -o build/control-test && build/control-test
+// swiftc -swift-version 5 mac/Sources/{Catalog,Speed,Ollama,Manager}.swift tests/control/main.swift -o build/control-test && build/control-test
 import Foundation
 
 var failures = 0

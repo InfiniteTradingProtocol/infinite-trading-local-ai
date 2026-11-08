@@ -2,10 +2,11 @@ import AppKit
 import SwiftUI
 
 enum Tab: String, CaseIterable {
-    case library = "Library", running = "Running", logs = "Logs"
+    case library = "Library", chat = "Chat", running = "Running", logs = "Logs"
     var icon: String {
         switch self {
         case .library: return "square.grid.2x2"
+        case .chat: return "bubble.left.and.bubble.right"
         case .running: return "cpu"
         case .logs: return "text.alignleft"
         }
@@ -59,12 +60,13 @@ struct MainPane: View {
 
             switch nav.tab {
             case .library: LibraryView()
+            case .chat: ChatView()
             case .running: RunningView()
             case .logs: LogsView()
             }
         }
         .onAppear { manager.start() }
-        .onChange(of: nav.tab) { manager.fast = $0 != .library }
+        .onChange(of: nav.tab) { manager.fast = $0 == .running || $0 == .logs }
     }
 }
 
@@ -102,7 +104,7 @@ struct RunningView: View {
                         VStack(alignment: .leading, spacing: 10) {
                             Image(systemName: "moon.zzz").font(.system(size: 26)).foregroundStyle(Theme.violet)
                             Text("No local model servers are running").font(.system(size: 15, weight: .semibold))
-                            Text("Looked for Ollama, LocalJev (Jev), oMLX, llama.cpp, LM Studio, MLX LM, vLLM, KoboldCpp and LocalAI.")
+                            Text("Looked for Ollama, oMLX, llama.cpp, LM Studio, MLX LM, vLLM, KoboldCpp and LocalAI.")
                                 .font(.system(size: 12)).foregroundStyle(Theme.dim)
                             if Ollama.appURL != nil {
                                 Button("Start Ollama") { manager.run("start-ollama", success: "Ollama started.") { try await Ollama.launch() } }
@@ -212,7 +214,7 @@ struct ServerCard: View {
                         .menuStyle(.borderlessButton).fixedSize()
                         .disabled(idle.isEmpty)
                 } else if let port = s.apiPort {
-                    Text(verbatim: "http://127.0.0.1:\(port)" + (s.engine == .jev ? "" : "/v1")).font(.system(size: 11, design: .monospaced)).foregroundStyle(Theme.dim)
+                    Text(verbatim: "http://127.0.0.1:\(port)/v1").font(.system(size: 11, design: .monospaced)).foregroundStyle(Theme.dim)
                         .textSelection(.enabled)
                 }
             }
@@ -228,20 +230,6 @@ struct ServerCard: View {
                 ForEach(s.orphanRunners, id: \.pid) { r in
                     Text("Runner pid \(r.pid) on port \(r.port.map(String.init) ?? "?") · \(bytes(r.rssBytes)) · not matched to a model")
                         .font(.system(size: 11)).foregroundStyle(Theme.amber)
-                }
-            } else if s.engine == .jev {
-                HStack(spacing: 6) {
-                    Chip(text: s.ready == true ? "Ready" : "Upstream model not ready", color: s.ready == true ? Theme.green : Theme.amber)
-                    Chip(text: s.siteAllowed == true ? "Site allowed (CORS)" : "Site blocked: no CORS for infinitetrading.io",
-                         color: s.siteAllowed == true ? Theme.green : Theme.red)
-                    Chip(text: "Market Scanner Ask AI only", color: Theme.cyan)
-                    Chip(text: "jev-latest · jev-preview")
-                }
-                Text("Typed verdicts (stance, conviction, answerable, risk), not written answers. Needs its oMLX upstream (default port 8000) to be running.")
-                    .font(.system(size: 11.5)).foregroundStyle(Theme.dim)
-                if let cwd = s.cwd {
-                    Text("\(cwd) · \(s.proc.command)").font(.system(size: 10, design: .monospaced))
-                        .foregroundStyle(Theme.dim.opacity(0.7)).lineLimit(1).truncationMode(.middle).textSelection(.enabled)
                 }
             } else {
                 Text(s.apiModels.isEmpty ? "No model list at /v1/models." : "Models: " + s.apiModels.joined(separator: ", "))
@@ -335,21 +323,19 @@ struct PortSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Change \(server.engine == .jev ? "LocalJev" : "Ollama")'s port").font(.system(size: 17, weight: .bold))
+            Text("Change Ollama's port").font(.system(size: 17, weight: .bold))
             Text("Currently \(server.ports.map(String.init).joined(separator: ", ")) · \(server.management.label)")
                 .font(.system(size: 12)).foregroundStyle(Theme.dim)
             TextField("Port, e.g. 11435", text: $text)
                 .textFieldStyle(.roundedBorder).font(.system(size: 14, design: .monospaced)).frame(width: 200)
-            Text(server.engine == .jev
-                 ? "Restarts LocalJev in its folder with LOCALJEV_PORT=\(port.map(String.init) ?? "…"). A LOCALJEV_PORT in its .env file takes precedence. On the site, set the Jev address to http://127.0.0.1:\(port.map(String.init) ?? "PORT")."
-                 : "Sets OLLAMA_HOST=127.0.0.1:\(port.map(String.init) ?? "…") for this Mac (kept after you log out) and restarts Ollama. Every Ollama server started afterwards uses it.")
+            Text("Sets OLLAMA_HOST=127.0.0.1:\(port.map(String.init) ?? "…") for this Mac (kept after you log out) and restarts Ollama. Every Ollama server started afterwards uses it.")
                 .font(.system(size: 11.5)).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
             if server.isMain {
                 Text("The site connects to localhost:11434 by default. After a change, enter http://localhost:\(port.map(String.init) ?? "PORT") as the Ollama address in the Infinite Agent's AI settings.")
                     .font(.system(size: 11.5)).foregroundStyle(Theme.amber).fixedSize(horizontal: false, vertical: true)
             }
             HStack {
-                let home = server.engine == .jev ? Jev.defaultPort : Ollama.defaultPort
+                let home = Ollama.defaultPort
                 if !server.ports.contains(home) {
                     Button("Reset to \(String(home))") {
                         manager.changePort(server, to: home); dismiss()

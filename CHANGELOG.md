@@ -6,6 +6,26 @@ The current version is always the one in `mac/`, `catalog/` and `tests/`. From
 [`archive/<version>/`](archive). The 0.2.0 source was checked to rebuild its shipped
 executable exactly (normalized).
 
+## 0.6.0 — 2026-11-08 · Chat
+
+### Added
+- **Chat** tab: talk to any local model to see how it answers and how fast it
+  runs on this Mac before using it with the Infinite Agent. Works with Ollama
+  and with OpenAI-compatible servers (LM Studio, llama.cpp, MLX LM, vLLM…).
+  Each answer shows tokens per second, time to the first word, prompt speed and
+  model load time; reasoning models show their thinking separately. Stop
+  anytime; chats aren't saved. The recommended model has a **Try it in Chat**
+  button.
+
+### Removed
+- Support for one experimental decision-model server, and its card, port and
+  restart controls. The Running tab lists the other engines as before.
+
+### Fixed
+- The README's network note now lists update checks (GitHub and
+  infinitetrading.io), and the control test's compile command includes
+  `Speed.swift`.
+
 ## 0.5.3 — 2026-11-05 · Public repository
 
 ### Changed
@@ -121,15 +141,10 @@ executable exactly (normalized).
 - The catalog records parameter counts (`paramsB`, plus `activeB` for
   mixture-of-experts models).
 
-## 0.3.0 — 2026-10-30 · Open source, Jev, verifiable builds
+## 0.3.0 — 2026-10-30 · Open source, verifiable builds
 
 ### Added
-- **Jev (LocalJev) support.** The app detects LocalJev (a Bun process run from
-  a LocalJev checkout) and its oMLX upstream, checks `/ready` and whether the
-  site is allowed (CORS), and can restart LocalJev or change its port
-  (`LOCALJEV_PORT`). The Library has a Jev card with use cases and
-  limitations: typed verdicts only, Market Scanner Ask AI only, manual setup
-  on Apple Silicon.
+- Support for an experimental decision-model server (removed in 0.6.0).
 - **Verifiable builds.** `scripts/verify.sh` rebuilds the executable from the
   checked-out source and compares it with a downloaded DMG.
   `scripts/normalize-macho.py` zeroes the linker's random `LC_UUID`.
@@ -146,7 +161,6 @@ executable exactly (normalized).
 - **Stop** on an Ollama run by the desktop app didn't stop it, because the
   app ignores a polite quit. Stop now escalates to a force-quit, then stops the
   server process, the same way Restart does.
-- The Jev server card no longer shows a `/v1` address.
 
 ### Changed
 - `build.sh` passes `-module-name InfiniteAgentManager`, so the output path
@@ -158,7 +172,7 @@ Renamed from **Infinite Local AI** (bundle id `io.infinitetrading.agentmanager`)
 
 ### Added
 - **Running** tab: every local model server on the Mac (Ollama, llama.cpp,
-  LM Studio, MLX LM, vLLM, KoboldCpp, LocalAI, Jev), found from processes and
+  LM Studio, MLX LM, vLLM, KoboldCpp, LocalAI), found from processes and
   listening ports. Each shows port, PID, CPU, memory, uptime and who manages it
   (Ollama app, a launchd service or a process started by hand).
 - Per Ollama server: the models in memory, from `/api/ps`, with GPU/CPU split,

@@ -57,20 +57,27 @@ to your Mac, and records measured speeds per model. See
 (5 min to Never). A **pin** keeps one model in memory until you unpin it. The
 app re-applies it after each request, because a request resets the idle timer.
 
-**Running**: every local model server on the Mac: Ollama, LocalJev (Jev), oMLX,
-llama.cpp, LM Studio, MLX LM, vLLM, KoboldCpp and LocalAI. Each shows port, PID,
+**Chat**: try any local model before using it with the Infinite Agent. Pick a
+model from any running server (Ollama, or the OpenAI-compatible API of LM
+Studio, llama.cpp, MLX LM…), and the answer streams in with its measured speed
+(tokens per second, time to the first word, prompt speed and load time; exact
+counts from Ollama). Reasoning models show their thinking separately. Chats talk
+only to `127.0.0.1` and aren't saved.
+
+**Running**: every local model server on the Mac: Ollama, oMLX, llama.cpp,
+LM Studio, MLX LM, vLLM, KoboldCpp and LocalAI. Each shows port, PID,
 CPU, memory, uptime and how it is managed.
 - **Ollama**: every loaded model with its GPU/CPU split, context, time until
   unload and runner process (pid, runner port). You can reload, unload, keep a
   model loaded, or load another.
 - **Restart**: relaunches the Ollama app, runs `launchctl kickstart -k` for
-  launchd services, or re-spawns a hand-started `ollama serve` or LocalJev.
-- **Change port**: Ollama uses `OLLAMA_HOST`, kept across logins; LocalJev uses
-  `LOCALJEV_PORT`. If the server doesn't come back, the old setting is restored.
+  launchd services, or re-spawns a hand-started `ollama serve`.
+- **Change port**: Ollama uses `OLLAMA_HOST`, kept across logins. If the server
+  doesn't come back, the old setting is restored.
 - **Stop**: asks for confirmation first.
 
 **Logs**: live tail of the Ollama server, app and Homebrew logs, launchd
-service logs, LM Studio, LocalJev and this app's own activity log
+service logs, LM Studio and this app's own activity log
 (`~/Library/Logs/Infinite Agent Manager/activity.log`).
 
 ### What it changes on your Mac
@@ -78,24 +85,12 @@ service logs, LM Studio, LocalJev and this app's own activity log
 - One LaunchAgent, `~/Library/LaunchAgents/io.infinitetrading.agentmanager.ollama-env.plist`,
   that re-applies those variables (and `OLLAMA_KEEP_ALIVE`, if you set it) at login.
 - `Ollama.app` in `/Applications` (or `~/Applications`), when you ask it to install Ollama.
-- Its activity log, and `localjev.log` if it restarts LocalJev.
+- Its activity log.
 
 **Connection → Stop Allowing Infinite Trading** removes only what the app
-added. The app has no telemetry and makes no network requests except to
-ollama.com (Ollama and model downloads) and to servers on `127.0.0.1`.
-
-### About Jev
-Jev is a decision model served by [LocalJev](https://github.com/githubnext/localjev),
-not an Ollama model. It answers with typed verdicts: a stance, a conviction
-level, whether the question is answerable, and whether risk is elevated.
-- **Where it works:** only in the site's **Market Scanner → Ask AI**; the
-  Infinite Agent doesn't use it.
-- **Setup:** manual. It needs Bun 1.2+, an oMLX server on Apple Silicon and
-  the DiffusionGemma 26B-A4B 4-bit model (about 15 GB, estimated).
-- **Confidence numbers:** self-reported by the model, not calibrated.
-- **What this app does:** detects LocalJev, checks `/ready` and whether the
-  site is allowed (CORS), and restarts it or changes its port. It doesn't
-  install it.
+added. The app has no telemetry. It only connects to ollama.com (Ollama and
+model downloads), GitHub and infinitetrading.io (update checks), and servers on
+`127.0.0.1` (including the chat).
 
 ## Speed estimates
 
@@ -155,7 +150,8 @@ architecture's slice of the same executable.
 |---|---|
 | `mac/Sources/Catalog.swift` | Model catalog, Mac specs, fit and recommendation rules |
 | `mac/Sources/Ollama.swift` | Ollama API, verified install, launchd environment, site access |
-| `mac/Sources/Manager.swift` | Server discovery (`ps`, `lsof`, `launchctl`), restart/stop/port, Jev, logs |
+| `mac/Sources/Chat.swift` | The Chat tab: streaming over `/api/chat` or `/v1/chat/completions`, speed stats |
+| `mac/Sources/Manager.swift` | Server discovery (`ps`, `lsof`, `launchctl`), restart/stop/port, logs |
 | `mac/Sources/*Views.swift`, `App.swift` | SwiftUI interface |
 | `catalog/models.json` | The model list (shared with the future Windows/Linux apps) |
 | `scripts/verify.sh` | Rebuild and compare against a downloaded DMG |
@@ -197,9 +193,13 @@ right-click → Open. Notarized builds will follow when a Developer ID is set up
 # Recommendation rules (also run in CI)
 xcrun swiftc -swift-version 5 mac/Sources/{Catalog,Speed}.swift tests/recommend/main.swift -o build/recommend-test && build/recommend-test
 
+# Live chat test: both chat APIs, multi-turn context, Stop and errors, against
+# the Ollama on this Mac (default model llama3.2:1b)
+xcrun swiftc -swift-version 5 $(ls mac/Sources/*.swift | grep -v App.swift) tests/chat/main.swift -o build/chat-test && build/chat-test
+
 # Live control test: restarts, re-ports (11434 → 11435 → 11434), stops and starts
 # the Ollama on this Mac (~1 minute of downtime, restores OLLAMA_HOST)
-xcrun swiftc -swift-version 5 mac/Sources/{Catalog,Ollama,Manager}.swift tests/control/main.swift -o build/control-test && build/control-test
+xcrun swiftc -swift-version 5 mac/Sources/{Catalog,Speed,Ollama,Manager}.swift tests/control/main.swift -o build/control-test && build/control-test
 
 # Render the window to PNG: --tab library|running|logs; ILA_DEMO=1 shows sample servers,
 # ILA_SPECS="M4 Pro,48" simulates another Mac, ILA_HEIGHT=2400 renders taller
