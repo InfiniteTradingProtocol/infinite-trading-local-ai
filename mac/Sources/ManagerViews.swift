@@ -276,8 +276,8 @@ struct LoadedRow: View {
                     Chip(text: gpu >= 0.99 ? "100% GPU" : gpu <= 0.01 ? "CPU only" : "\(Int(gpu * 100))% GPU / \(100 - Int(gpu * 100))% CPU",
                          color: gpu >= 0.99 ? Theme.green : gpu <= 0.01 ? Theme.amber : Theme.cyan)
                     if let c = m.context_length { Chip(text: "\(c / 1024)k ctx") }
-                    Chip(text: expiry, color: Theme.dim)
                 }
+                Chip(text: expiry, color: Theme.dim)
                 Text(runnerText).font(.system(size: 10.5, design: .monospaced)).foregroundStyle(Theme.dim).lineLimit(1)
             }
             Spacer()
@@ -286,8 +286,8 @@ struct LoadedRow: View {
                 Stat(label: "CPU", value: String(format: "%.0f%%", r.cpu))
             }
             if busy { ProgressView().controlSize(.small) }
-            Button("Reload") { manager.reload(model, on: server) }.buttonStyle(GhostButton(tint: Theme.cyan)).disabled(busy)
-            Button("Unload") { manager.unload(model, on: server) }.buttonStyle(GhostButton(tint: Theme.red)).disabled(busy)
+            Button("Reload") { manager.reload(model, on: server) }.buttonStyle(GhostButton(tint: Theme.cyan)).disabled(busy).fixedSize()
+            Button("Unload") { manager.unload(model, on: server) }.buttonStyle(GhostButton(tint: Theme.red)).disabled(busy).fixedSize()
             let isPinned = manager.pinned.contains(model.id)
             Button { manager.togglePin(model.id, on: server) } label: {
                 Image(systemName: isPinned ? "pin.fill" : "pin")
@@ -308,7 +308,7 @@ struct LoadedRow: View {
 
     var runnerText: String {
         guard let r = model.runner else { return "runner process not found" }
-        return "runner pid \(r.pid) · port \(r.port.map(String.init) ?? "?") · \(bytes(r.rssBytes)) resident"
+        return "runner pid \(r.pid) · port \(r.port.map(String.init) ?? "?") · \(bytes(r.rssBytes))"
     }
 }
 

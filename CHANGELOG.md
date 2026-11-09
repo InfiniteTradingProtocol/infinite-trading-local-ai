@@ -6,6 +6,12 @@ The current version is always the one in `mac/`, `catalog/` and `tests/`. From
 [`archive/<version>/`](archive). The 0.2.0 source was checked to rebuild its shipped
 executable exactly (normalized).
 
+## 0.6.2 — 2026-11-09 · Tidier Running tab
+
+### Fixed
+- **Reload** and **Unload** no longer wrap onto several lines at the default
+  window size, and the runner details are no longer cut off.
+
 ## 0.6.1 — 2026-11-09 · Updates are your choice
 
 ### Changed
