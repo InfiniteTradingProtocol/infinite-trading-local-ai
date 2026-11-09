@@ -23,6 +23,9 @@ struct ModelInfo: Codable, Identifiable, Hashable {
     var title: String { "\(name) \(params)" }
     var names: Set<String> { Set([id] + aliases) }
     var reasoning: Bool { tags.contains("reasoning") }
+    var uncensored: Bool { tags.contains("uncensored") }
+    /// Listed for people who want it, but never suggested.
+    var recommendable: Bool { !uncensored && !tags.contains("chat-only") }
 }
 
 struct Catalog: Codable {
@@ -117,7 +120,7 @@ func fit(_ m: ModelInfo, on s: MacSpecs, installed: Bool = false) -> Fit {
 /// (under 3 tok/s, or minutes before the first word) is passed over.
 func recommend(_ models: [ModelInfo], for s: MacSpecs, installed: Set<String> = [],
                speed: ((ModelInfo) -> SpeedEstimate)? = nil) -> ModelInfo? {
-    let scored = models.map { ($0, fit($0, on: s, installed: !$0.names.isDisjoint(with: installed))) }
+    let scored = models.filter(\.recommendable).map { ($0, fit($0, on: s, installed: !$0.names.isDisjoint(with: installed))) }
     for wanted in [Fit.great, .ok, .slow] {
         let pool = scored.filter { $0.1 == wanted }.map(\.0)
         guard !pool.isEmpty else { continue }

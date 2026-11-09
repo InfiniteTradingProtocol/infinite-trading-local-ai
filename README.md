@@ -32,6 +32,7 @@ macOS 13+ (Ollama itself needs macOS 14+). Windows and Linux are coming.
    `OLLAMA_ORIGINS` (keeping existing entries) and restarts Ollama, then checks
    the result with a real CORS request.
 6. Opens the Infinite Agent. On the site, choose Ollama → Connect.
+Filters include **Tiny** (under 1 GB, from 92 MB) and **Uncensored** (labelled models with reduced refusals, never recommended automatically). **Chat only** marks models too small for the Infinite Agent.
 
 **Speed**: every model shows how fast it will run on *this* Mac: tokens per
 second while writing, time to the first word for the agent's ~3k-token prompt,

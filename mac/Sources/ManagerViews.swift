@@ -142,6 +142,55 @@ struct ServerCard: View {
     @State private var portSheet = false
     @State private var confirmStop = false
 
+    @ViewBuilder private func actions(_ s: Server, busy: Bool) -> some View {
+        if s.canChangePort {
+            Button { portSheet = true } label: { Label("Change port", systemImage: "number") }
+                .buttonStyle(GhostButton())
+        }
+        Button { manager.restart(s) } label: { Label("Restart", systemImage: "arrow.triangle.2.circlepath") }
+            .buttonStyle(GhostButton(tint: Theme.cyan))
+            .disabled(!s.canRestart || busy)
+            .help(s.canRestart ? "Restart this server" : "Started by hand: restart it where you launched it")
+        Button { confirmStop = true } label: { Label("Stop", systemImage: "stop.fill") }
+            .buttonStyle(GhostButton(tint: Theme.red)).disabled(busy)
+        Button {
+            nav.logPath = LogSource.available(servers: [s]).first { $0.name != "Agent Manager activity" }?.path
+            nav.tab = .logs
+        } label: { Label("Logs", systemImage: "text.alignleft") }
+            .buttonStyle(GhostButton())
+    }
+
+    @ViewBuilder private func menus(_ s: Server) -> some View {
+        if s.engine == .ollama && s.isMain {
+            Menu {
+                ForEach(ManagerModel.keepAliveChoices, id: \.value) { c in
+                    Button {
+                        manager.setKeepAlive(c.value, on: s)
+                    } label: {
+                        if c.value == manager.keepAliveDefault { Label(c.label, systemImage: "checkmark") } else { Text(c.label) }
+                    }
+                }
+            } label: {
+                Label("Unload idle: \(ManagerModel.keepAliveLabel(manager.keepAliveDefault))", systemImage: "clock.arrow.circlepath")
+            }
+            .menuStyle(.borderlessButton).fixedSize()
+            .help("How long Ollama keeps a model in memory after its last request (OLLAMA_KEEP_ALIVE). Changing it restarts Ollama.")
+        }
+        if s.engine == .ollama {
+            let idle = s.installed.filter { n in !s.loaded.contains { $0.id == n } && !n.contains("embed") }
+            Menu {
+                ForEach(idle, id: \.self) { name in
+                    Button(name) { manager.load(name, on: s) }
+                }
+            } label: { Label("Load model", systemImage: "plus.circle") }
+                .menuStyle(.borderlessButton).fixedSize()
+                .disabled(idle.isEmpty)
+        } else if let port = s.apiPort {
+            Text(verbatim: "http://127.0.0.1:\(port)/v1").font(.system(size: 11, design: .monospaced)).foregroundStyle(Theme.dim)
+                .textSelection(.enabled)
+        }
+    }
+
     var body: some View {
         let s = server
         let busy = manager.busy.contains { $0.hasSuffix("-\(s.pid)") }
@@ -157,13 +206,15 @@ struct ServerCard: View {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 8) {
                         Circle().fill(Theme.green).frame(width: 7, height: 7).shadow(color: Theme.green, radius: 4)
-                        Text(s.engine.rawValue).font(.system(size: 15, weight: .semibold))
-                        if let v = s.version { Text("v\(v)").font(.system(size: 12)).foregroundStyle(Theme.dim) }
-                        if s.isMain { Chip(text: "Used by Infinite Agent", color: Theme.magenta) }
+                        Text(s.engine.rawValue).font(.system(size: 15, weight: .semibold)).fixedSize()
+                        if let v = s.version { Text("v\(v)").font(.system(size: 12)).foregroundStyle(Theme.dim).fixedSize() }
                         if busy { ProgressView().controlSize(.small).scaleEffect(0.7) }
                     }
-                    Text("\(s.management.label) · up \(s.proc.elapsed)")
-                        .font(.system(size: 11)).foregroundStyle(Theme.dim)
+                    HStack(spacing: 6) {
+                        if s.isMain { Chip(text: "Used by Infinite Agent", color: Theme.magenta) }
+                        Text("\(s.management.label) · up \(s.proc.elapsed)")
+                            .font(.system(size: 11)).foregroundStyle(Theme.dim).lineLimit(1).truncationMode(.tail)
+                    }
                 }
                 Spacer()
                 Stat(label: "Port", value: s.ports.map(String.init).joined(separator: ", "))
@@ -172,50 +223,12 @@ struct ServerCard: View {
                 Stat(label: "Memory", value: bytes(s.proc.rssBytes + s.runnerRSS))
             }
 
-            HStack(spacing: 8) {
-                if s.canChangePort {
-                    Button { portSheet = true } label: { Label("Change port", systemImage: "number") }
-                        .buttonStyle(GhostButton())
-                }
-                Button { manager.restart(s) } label: { Label("Restart", systemImage: "arrow.triangle.2.circlepath") }
-                    .buttonStyle(GhostButton(tint: Theme.cyan))
-                    .disabled(!s.canRestart || busy)
-                    .help(s.canRestart ? "Restart this server" : "Started by hand: restart it where you launched it")
-                Button { confirmStop = true } label: { Label("Stop", systemImage: "stop.fill") }
-                    .buttonStyle(GhostButton(tint: Theme.red)).disabled(busy)
-                Button {
-                    nav.logPath = LogSource.available(servers: [s]).first { $0.name != "Agent Manager activity" }?.path
-                    nav.tab = .logs
-                } label: { Label("Logs", systemImage: "text.alignleft") }
-                    .buttonStyle(GhostButton())
-                Spacer()
-                if s.engine == .ollama && s.isMain {
-                    Menu {
-                        ForEach(ManagerModel.keepAliveChoices, id: \.value) { c in
-                            Button {
-                                manager.setKeepAlive(c.value, on: s)
-                            } label: {
-                                if c.value == manager.keepAliveDefault { Label(c.label, systemImage: "checkmark") } else { Text(c.label) }
-                            }
-                        }
-                    } label: {
-                        Label("Unload idle: \(ManagerModel.keepAliveLabel(manager.keepAliveDefault))", systemImage: "clock.arrow.circlepath")
-                    }
-                    .menuStyle(.borderlessButton).fixedSize()
-                    .help("How long Ollama keeps a model in memory after its last request (OLLAMA_KEEP_ALIVE). Changing it restarts Ollama.")
-                }
-                if s.engine == .ollama {
-                    let idle = s.installed.filter { n in !s.loaded.contains { $0.id == n } && !n.contains("embed") }
-                    Menu {
-                        ForEach(idle, id: \.self) { name in
-                            Button(name) { manager.load(name, on: s) }
-                        }
-                    } label: { Label("Load model", systemImage: "plus.circle") }
-                        .menuStyle(.borderlessButton).fixedSize()
-                        .disabled(idle.isEmpty)
-                } else if let port = s.apiPort {
-                    Text(verbatim: "http://127.0.0.1:\(port)/v1").font(.system(size: 11, design: .monospaced)).foregroundStyle(Theme.dim)
-                        .textSelection(.enabled)
+            // On a narrow window the menus drop to their own line instead of squeezing the buttons.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 8) { actions(s, busy: busy); Spacer(minLength: 8); menus(s) }
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 8) { actions(s, busy: busy) }
+                    HStack(spacing: 8) { menus(s) }
                 }
             }
 
@@ -269,23 +282,23 @@ struct LoadedRow: View {
         let m = model.info
         let gpu = m.gpuShare
         let busy = manager.busy.contains("model-\(server.pid)-\(model.id)")
-        HStack(spacing: 14) {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 8) {
-                    Text(m.name).font(.system(size: 13, weight: .semibold)).lineLimit(1).fixedSize()
-                    Chip(text: gpu >= 0.99 ? "100% GPU" : gpu <= 0.01 ? "CPU only" : "\(Int(gpu * 100))% GPU / \(100 - Int(gpu * 100))% CPU",
-                         color: gpu >= 0.99 ? Theme.green : gpu <= 0.01 ? Theme.amber : Theme.cyan)
-                    if let c = m.context_length { Chip(text: "\(c / 1024)k ctx") }
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 14) {
+                // Names can be long (hf.co/…): they truncate so the row never outgrows the window.
+                Text(m.name).font(.system(size: 13, weight: .semibold)).lineLimit(1).truncationMode(.middle)
+                    .help(m.name).frame(maxWidth: .infinity, alignment: .leading)
+                Stat(label: "Size", value: bytes(m.size))
+                if let r = model.runner {
+                    Stat(label: "CPU", value: String(format: "%.0f%%", r.cpu))
                 }
+            }
+            HStack(spacing: 8) {
+                Chip(text: gpu >= 0.99 ? "100% GPU" : gpu <= 0.01 ? "CPU only" : "\(Int(gpu * 100))% GPU / \(100 - Int(gpu * 100))% CPU",
+                     color: gpu >= 0.99 ? Theme.green : gpu <= 0.01 ? Theme.amber : Theme.cyan)
+                if let c = m.context_length { Chip(text: "\(c / 1024)k ctx") }
                 Chip(text: expiry, color: Theme.dim)
-                Text(runnerText).font(.system(size: 10.5, design: .monospaced)).foregroundStyle(Theme.dim).lineLimit(1)
-            }
-            Spacer()
-            Stat(label: "Size", value: bytes(m.size))
-            if let r = model.runner {
-                Stat(label: "CPU", value: String(format: "%.0f%%", r.cpu))
-            }
-            if busy { ProgressView().controlSize(.small) }
+                Spacer(minLength: 8)
+                if busy { ProgressView().controlSize(.small) }
             Button("Reload") { manager.reload(model, on: server) }.buttonStyle(GhostButton(tint: Theme.cyan)).disabled(busy).fixedSize()
             Button("Unload") { manager.unload(model, on: server) }.buttonStyle(GhostButton(tint: Theme.red)).disabled(busy).fixedSize()
             let isPinned = manager.pinned.contains(model.id)
@@ -301,6 +314,8 @@ struct LoadedRow: View {
             } label: { Image(systemName: "timer") }
                 .menuStyle(.borderlessButton).fixedSize().help("Keep loaded once for… (a pin lasts)")
                 .disabled(isPinned)
+            }
+            Text(runnerText).font(.system(size: 10.5, design: .monospaced)).foregroundStyle(Theme.dim).lineLimit(1).truncationMode(.tail)
         }
         .padding(12)
         .background(RoundedRectangle(cornerRadius: 11, style: .continuous).fill(Color.white.opacity(0.04)))

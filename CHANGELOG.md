@@ -6,6 +6,23 @@ The current version is always the one in `mac/`, `catalog/` and `tests/`. From
 [`archive/<version>/`](archive). The 0.2.0 source was checked to rebuild its shipped
 executable exactly (normalized).
 
+## 0.7.0 — 2026-11-09 · More models
+
+### Added
+- **Tiny models** from 92 MB (SmolLM, Gemma 3 270M, Qwen 2.5 494M, Granite 4
+  350M and more), with a **Tiny** filter in the Library.
+- **Uncensored models** (Dolphin, Wizard Vicuna, abliterated Qwen3 and others)
+  with an **Uncensored** label and filter. They are never recommended
+  automatically.
+- A **Chat only** label for models too small, or with too short a context, for
+  the Infinite Agent.
+
+### Fixed
+- A loaded model with a long name no longer pushes the window's contents past
+  its edges, and the Running tab adapts to narrow windows.
+- Chat uses the same context size as the Infinite Agent, so trying a loaded
+  model doesn't force it to reload.
+
 ## 0.6.2 — 2026-11-09 · Tidier Running tab
 
 ### Fixed

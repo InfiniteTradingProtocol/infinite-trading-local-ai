@@ -31,6 +31,9 @@ for (s, want) in expected {
 check(recommend(catalog.models, for: mac(32, disk: 6))?.sizeGB ?? 99 <= 4, "low disk picks a small model")
 check(recommend(catalog.models, for: mac(32, disk: 1), installed: ["qwen3:30b"])?.id == "qwen3:30b", "installed model ignores disk")
 check(recommend(catalog.models, for: mac(2)) == nil, "nothing fits 2 GB")
+for gb in [4.0, 8, 16, 36, 64, 128] {
+    check(recommend(catalog.models, for: mac(gb))?.recommendable == true, "uncensored and chat-only models are never recommended (\(gb) GB)")
+}
 func model(_ id: String) -> ModelInfo { catalog.models.first { $0.id == id }! }
 check(fit(model("llama3.2:3b"), on: mac(8)) == .great, "llama3.2:3b great on 8 GB")
 check(fit(model("qwen3:8b"), on: mac(64, arm: false)) == .slow, "8B is slow but usable on Intel")

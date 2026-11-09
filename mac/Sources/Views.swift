@@ -125,6 +125,8 @@ func tagChip(_ tag: String) -> Chip {
     case "reasoning": return Chip(text: "Reasoning", color: Theme.magenta)
     case "vision": return Chip(text: "Vision", color: Theme.amber)
     case "fast": return Chip(text: "Fast", color: Theme.green)
+    case "uncensored": return Chip(text: "Uncensored", color: Theme.red)
+    case "chat-only": return Chip(text: "Chat only")
     default: return Chip(text: tag)
     }
 }
@@ -347,11 +349,13 @@ struct StepsCard: View {
 
 // MARK: Main pane
 
-enum Filter: String, CaseIterable { case fits = "Fits my Mac", all = "All models", installed = "Installed" }
+enum Filter: String, CaseIterable {
+    case fits = "Fits my Mac", all = "All models", installed = "Installed", tiny = "Tiny", uncensored = "Uncensored"
+}
 
 struct LibraryView: View {
     @EnvironmentObject var app: AppModel
-    @State private var filter: Filter = .fits
+    @State private var filter: Filter = Filter(rawValue: ProcessInfo.processInfo.environment["ILA_FILTER"] ?? "") ?? .fits // env: snapshots only
     @State private var query = ""
 
     var shown: [ModelInfo] {
@@ -362,6 +366,8 @@ struct LibraryView: View {
                 if f < .slow && !app.isInstalled(m) { return false }
                 if app.estimate(m).tier == .veryslow && !app.isInstalled(m) { return false }
             case .installed: if !app.isInstalled(m) { return false }
+            case .tiny: if m.sizeGB >= 1 { return false }
+            case .uncensored: if !m.uncensored { return false }
             case .all: break
             }
             return query.isEmpty || "\(m.title) \(m.publisher) \(m.id)".localizedCaseInsensitiveContains(query)
@@ -389,9 +395,14 @@ struct LibraryView: View {
                     Picker("", selection: $filter) {
                         ForEach(Filter.allCases, id: \.self) { Text($0.rawValue).tag($0) }
                     }
-                    .pickerStyle(.segmented).labelsHidden().frame(width: 290)
+                    .pickerStyle(.segmented).labelsHidden().frame(width: 400)
                     TextField("Search", text: $query)
-                        .textFieldStyle(.roundedBorder).frame(width: 150)
+                        .textFieldStyle(.roundedBorder).frame(minWidth: 90, maxWidth: 150)
+                }
+
+                if filter == .uncensored {
+                    Text("These models have had their refusals reduced or removed, so they answer what others decline. They can be wrong or offensive; you're responsible for how you use them. Never recommended automatically. Those marked huihui_ai are community builds.")
+                        .font(.system(size: 11.5)).foregroundStyle(Theme.amber).fixedSize(horizontal: false, vertical: true)
                 }
 
                 LazyVStack(spacing: 10) {
@@ -673,7 +684,7 @@ struct OtherModelRow: View {
             Image(systemName: "shippingbox").foregroundStyle(Theme.violet).frame(width: 22)
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 8) {
-                    Text(installed.name).font(.system(size: 13, weight: .semibold))
+                    Text(installed.name).font(.system(size: 13, weight: .semibold)).lineLimit(1).truncationMode(.middle).help(installed.name)
                     Text(installed.details?.parameter_size ?? "").font(.system(size: 11.5)).foregroundStyle(Theme.violet)
                 }
                 Text(est.detail).font(.system(size: 10.5, design: .monospaced)).foregroundStyle(Theme.dim)

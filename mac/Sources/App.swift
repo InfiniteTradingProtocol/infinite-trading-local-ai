@@ -65,7 +65,7 @@ enum Entry {
             }
             await model.refresh()
             if ProcessInfo.processInfo.environment["ILA_DEMO"] == "1" { manager.loadDemo() } else { await manager.refresh() }
-            let size = NSSize(width: 1120, height: Double(ProcessInfo.processInfo.environment["ILA_HEIGHT"] ?? "") ?? 760)
+            let size = NSSize(width: Double(ProcessInfo.processInfo.environment["ILA_WIDTH"] ?? "") ?? 1120, height: Double(ProcessInfo.processInfo.environment["ILA_HEIGHT"] ?? "") ?? 760)
             let host = NSHostingView(rootView: RootView().environmentObject(model).environmentObject(manager).environmentObject(nav).environmentObject(UpdateModel()).frame(width: size.width, height: size.height))
             let window = NSWindow(contentRect: NSRect(origin: .zero, size: size), styleMask: [.borderless],
                                   backing: .buffered, defer: false)

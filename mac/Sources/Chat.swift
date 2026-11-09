@@ -163,7 +163,7 @@ final class ChatModel: ObservableObject {
         let start = Date()
         var firstWord: Double?
         let bytes = try await post(t.base.appendingPathComponent("api/chat"),
-                                   ["model": t.model, "messages": history, "stream": true])
+                                   ["model": t.model, "messages": history, "stream": true, "options": ["num_ctx": 16384]])
         for try await line in bytes.lines {
             guard let obj = try? JSONSerialization.jsonObject(with: Data(line.utf8)) as? [String: Any] else { continue }
             if let e = obj["error"] as? String { throw Ollama.Failure("Ollama: \(e)") }

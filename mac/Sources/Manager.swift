@@ -500,7 +500,7 @@ final class ManagerModel: ObservableObject {
             LoadedModel(info: .init(name: "qwen3:14b", digest: nil, size: 11_400_000_000, size_vram: 11_400_000_000,
                                     context_length: 16384, expires_at: soon),
                         runner: Runner(pid: 51877, port: 53114, blob: "", rssBytes: 10_900_000_000, cpu: 38, context: 16384)),
-            LoadedModel(info: .init(name: "llama3.2:3b", digest: nil, size: 3_600_000_000, size_vram: 3_600_000_000,
+            LoadedModel(info: .init(name: "hf.co/unsloth/Qwen3-8B-GGUF:Q4_K_M", digest: nil, size: 3_600_000_000, size_vram: 3_600_000_000,
                                     context_length: 8192, expires_at: far),
                         runner: Runner(pid: 51902, port: 53160, blob: "", rssBytes: 3_100_000_000, cpu: 0.2, context: 8192)),
         ]
