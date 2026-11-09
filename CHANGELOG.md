@@ -6,6 +6,18 @@ The current version is always the one in `mac/`, `catalog/` and `tests/`. From
 [`archive/<version>/`](archive). The 0.2.0 source was checked to rebuild its shipped
 executable exactly (normalized).
 
+## 0.8.0 — 2026-11-09 · Harnesses
+
+### Added
+- **Harnesses** tab: open Claude Code or Codex on a local model in Terminal,
+  inside a dedicated workspace folder with their permission prompts on, or open
+  the Infinite Agent. Ollama offers to install a harness the first time.
+
+### Changed
+- Ollama now starts as a background server. Its desktop window no longer opens
+  when this app starts, restarts or installs it. If the desktop app is already
+  open it is left alone until you restart Ollama from here, which closes it.
+
 ## 0.7.0 — 2026-11-09 · More models
 
 ### Added

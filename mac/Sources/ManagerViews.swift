@@ -2,11 +2,12 @@ import AppKit
 import SwiftUI
 
 enum Tab: String, CaseIterable {
-    case library = "Library", chat = "Chat", running = "Running", logs = "Logs"
+    case library = "Library", chat = "Chat", harnesses = "Harnesses", running = "Running", logs = "Logs"
     var icon: String {
         switch self {
         case .library: return "square.grid.2x2"
         case .chat: return "bubble.left.and.bubble.right"
+        case .harnesses: return "terminal"
         case .running: return "cpu"
         case .logs: return "text.alignleft"
         }
@@ -30,43 +31,55 @@ struct MainPane: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 6) {
-                ForEach(Tab.allCases, id: \.self) { tab in
-                    Button { nav.tab = tab } label: {
-                        HStack(spacing: 7) {
-                            Image(systemName: tab.icon)
-                            Text(tab.rawValue)
-                            if tab == .running && !manager.servers.isEmpty {
-                                Text("\(manager.servers.count)")
-                                    .font(.system(size: 10, weight: .bold))
-                                    .padding(.horizontal, 6).padding(.vertical, 1)
-                                    .background(Capsule().fill(Theme.green.opacity(0.25)))
-                                    .foregroundStyle(Theme.green)
-                            }
-                        }
-                        .font(.system(size: 12.5, weight: .semibold))
-                        .padding(.horizontal, 14).padding(.vertical, 8)
-                        .background(Capsule().fill(nav.tab == tab ? Color.white.opacity(0.10) : .clear))
-                        .overlay(Capsule().strokeBorder(nav.tab == tab ? Theme.violet.opacity(0.5) : .clear))
-                        .foregroundStyle(nav.tab == tab ? .white : Theme.dim)
-                        .contentShape(Capsule())
-                    }
-                    .buttonStyle(.plain)
+            // The port is also in the sidebar, so it's the first thing to go when narrow.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 6) {
+                    tabs
+                    Spacer(minLength: 8)
+                    Chip(text: "Ollama port \(Ollama.port)", color: Ollama.port == Ollama.defaultPort ? Theme.dim : Theme.amber)
                 }
-                Spacer()
-                Chip(text: "Ollama port \(Ollama.port)", color: Ollama.port == Ollama.defaultPort ? Theme.dim : Theme.amber)
+                HStack(spacing: 6) {
+                    tabs
+                    Spacer(minLength: 0)
+                }
             }
             .padding(.horizontal, 24).padding(.top, 16).padding(.bottom, 8)
 
             switch nav.tab {
             case .library: LibraryView()
             case .chat: ChatView()
+            case .harnesses: HarnessesView()
             case .running: RunningView()
             case .logs: LogsView()
             }
         }
         .onAppear { manager.start() }
         .onChange(of: nav.tab) { manager.fast = $0 == .running || $0 == .logs }
+    }
+
+    private var tabs: some View {
+        ForEach(Tab.allCases, id: \.self) { tab in
+            Button { nav.tab = tab } label: {
+                HStack(spacing: 7) {
+                    Image(systemName: tab.icon)
+                    Text(tab.rawValue).lineLimit(1).fixedSize()
+                    if tab == .running && !manager.servers.isEmpty {
+                        Text("\(manager.servers.count)")
+                            .font(.system(size: 10, weight: .bold))
+                            .padding(.horizontal, 6).padding(.vertical, 1)
+                            .background(Capsule().fill(Theme.green.opacity(0.25)))
+                            .foregroundStyle(Theme.green)
+                    }
+                }
+                .font(.system(size: 12.5, weight: .semibold))
+                .padding(.horizontal, 12).padding(.vertical, 8)
+                .background(Capsule().fill(nav.tab == tab ? Color.white.opacity(0.10) : .clear))
+                .overlay(Capsule().strokeBorder(nav.tab == tab ? Theme.violet.opacity(0.5) : .clear))
+                .foregroundStyle(nav.tab == tab ? .white : Theme.dim)
+                .contentShape(Capsule())
+            }
+            .buttonStyle(.plain)
+        }
     }
 }
 

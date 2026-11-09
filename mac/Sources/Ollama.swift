@@ -110,6 +110,14 @@ enum Ollama {
         return URL(fileURLWithPath: String(from.dropFirst(5))).lastPathComponent
     }
 
+    /// Whether the model declares tool calling, which coding agents depend on. Nil if unknown.
+    static func supportsTools(_ model: String, at base: URL = base) async -> Bool? {
+        guard let data = try? await send(request("api/show", at: base, method: "POST", body: ["model": model], timeout: 10)),
+              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let caps = obj["capabilities"] as? [String] else { return nil }
+        return caps.contains("tools")
+    }
+
     /// Loads a model into memory without generating (empty prompt).
     static func load(_ model: String, at base: URL, keepAlive: String, context: Int?) async throws {
         var body: [String: Any] = ["model": model, "keep_alive": keepAlive]
@@ -209,8 +217,15 @@ enum Ollama {
     /// Homebrew or a manual `ollama serve`, without the desktop app.
     static var cliOnly: Bool { appURL == nil && cliPath != nil }
 
+    /// The server binary, inside the app when it is installed.
+    static func serverBinary(in app: URL? = appURL) -> String? {
+        let bundled = app.map { $0.appendingPathComponent("Contents/Resources/ollama").path }
+        if let bundled, FileManager.default.isExecutableFile(atPath: bundled) { return bundled }
+        return cliPath
+    }
+
     /// Downloads the official app, checks it is notarized and signed by
-    /// Ollama's team, then moves it into Applications and opens it.
+    /// Ollama's team, then moves it into Applications and starts its server.
     static func install(progress: @escaping (Double) -> Void) async throws {
         let work = FileManager.default.temporaryDirectory.appendingPathComponent("ollama-install-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: work, withIntermediateDirectories: true)
@@ -246,17 +261,16 @@ enum Ollama {
         }
     }
 
+    /// Starts only the server: opening Ollama.app would bring up its own chat window.
     static func launch(_ app: URL? = nil, port: Int = port) async throws {
-        guard let url = app ?? appURL else { throw Failure("Ollama isn't installed.") }
-        let config = NSWorkspace.OpenConfiguration()
-        config.activates = false
-        _ = try await NSWorkspace.shared.openApplication(at: url, configuration: config)
+        guard let binary = serverBinary(in: app ?? appURL) else { throw Failure("Ollama isn't installed.") }
+        try Control.spawnOllama(binary: binary, port: port)
         guard await waitForServer(at: Ollama.url(port: port), up: true, seconds: 30) else {
-            throw Failure("Ollama opened but its server didn't answer on port \(port). Check the Ollama menu bar icon.")
+            throw Failure("Ollama started but its server didn't answer on port \(port). See the Logs tab.")
         }
     }
 
-    /// Quits and reopens the Ollama desktop app so it picks up its environment.
+    /// Quits the Ollama desktop app and brings its server back without the window.
     static func restartApp(port: Int = port, newPort: Int? = nil) async throws {
         guard appURL != nil else { throw Failure("The Ollama app isn't installed.") }
         await quitApp(port: port)

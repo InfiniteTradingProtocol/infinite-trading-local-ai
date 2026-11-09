@@ -221,7 +221,7 @@ final class AppModel: ObservableObject {
             if !(await SiteAccess.allowed()) { try await Ollama.restart() }
             await refresh()
             if !siteAllowed {
-                error = "Ollama restarted but still blocks the site. Quit Ollama from the menu bar, open it again, then press Check."
+                error = "Ollama restarted but still blocks the site. Stop Ollama in the Running tab, start it again, then press Check."
             }
             return siteAllowed
         } catch {

@@ -39,11 +39,17 @@ struct Proc {
 enum Management: Equatable {
     case ollamaApp, launchd(String), manual
 
+    /// True only for a server run by the desktop app. The binary lives inside
+    /// Ollama.app either way, so its path alone doesn't say who started it.
+    static func ownedByOllamaApp(_ command: String, parent: String?) -> Bool {
+        command.contains("/Ollama.app/Contents/MacOS/") || (parent?.contains("/Ollama.app/Contents/MacOS/") ?? false)
+    }
+
     var label: String {
         switch self {
         case .ollamaApp: return "Ollama app"
         case .launchd(let l): return "launchd · \(l)"
-        case .manual: return "Started manually"
+        case .manual: return "Background server"
         }
     }
 }
@@ -153,7 +159,7 @@ enum Discovery {
             // Helper processes (LM Studio has several) only count if they listen.
             guard let listen = ports[pid], !listen.isEmpty else { continue }
             let management: Management =
-                p.command.contains("/Ollama.app/") || (procs[p.ppid]?.command.contains("/Ollama.app/") ?? false) ? .ollamaApp
+                Management.ownedByOllamaApp(p.command, parent: procs[p.ppid]?.command) ? .ollamaApp
                 : labels[pid].map(Management.launchd) ?? .manual
             var s = Server(engine: engine, pid: pid, ports: listen.sorted(), proc: p, management: management)
             s.cwd = cwd
@@ -260,7 +266,7 @@ enum Control {
         return false
     }
 
-    private static func spawnOllama(binary: String, port: Int) throws {
+    static func spawnOllama(binary: String, port: Int) throws {
         let log = URL(fileURLWithPath: NSHomeDirectory() + "/.ollama/logs/server.log")
         try FileManager.default.createDirectory(at: log.deletingLastPathComponent(), withIntermediateDirectories: true)
         if !FileManager.default.fileExists(atPath: log.path) { FileManager.default.createFile(atPath: log.path, contents: nil) }
@@ -271,8 +277,11 @@ enum Control {
         p.arguments = ["serve"]
         var env = ProcessInfo.processInfo.environment
         env["OLLAMA_HOST"] = "127.0.0.1:\(port)"
-        let origins = OllamaEnv.get("OLLAMA_ORIGINS")
-        if !origins.isEmpty { env["OLLAMA_ORIGINS"] = origins }
+        // Read fresh: this app's own environment is from when it was opened.
+        for key in ["OLLAMA_ORIGINS", "OLLAMA_KEEP_ALIVE"] {
+            let value = OllamaEnv.get(key)
+            env[key] = value.isEmpty ? nil : value
+        }
         p.environment = env
         p.standardOutput = handle
         p.standardError = handle
