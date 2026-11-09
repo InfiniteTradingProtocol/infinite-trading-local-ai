@@ -90,7 +90,17 @@ struct UpdateFooter: View {
                     Spacer()
                     Button("Restart to update") { updates.installNow() }.buttonStyle(PrimaryButton(compact: true))
                 }
+            } else if let u = updates.available {
+                HStack(spacing: 8) {
+                    Image(systemName: "arrow.down.circle").foregroundStyle(Theme.violet)
+                    Text("Version \(u.version) is available").font(.system(size: 12, weight: .semibold))
+                    Spacer()
+                    Button("Update") { updates.update() }.buttonStyle(PrimaryButton(compact: true)).disabled(updates.busy)
+                }
             }
+            Toggle("Install updates automatically", isOn: $updates.autoInstall)
+                .toggleStyle(.checkbox).font(.system(size: 11)).foregroundStyle(Theme.dim)
+                .help("When off, nothing is downloaded or installed until you click Update.")
             HStack(spacing: 6) {
                 Text("v\(updates.current)").font(.system(size: 10.5, weight: .semibold, design: .monospaced))
                     .foregroundStyle(Theme.dim)

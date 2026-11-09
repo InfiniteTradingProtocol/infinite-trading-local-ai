@@ -279,14 +279,17 @@ final class UpdateModel: ObservableObject {
     @Published var progress: Double?
     @Published var busy = false
     @Published var autoInstall: Bool {
-        didSet { UserDefaults.standard.set(autoInstall, forKey: "autoInstallUpdates") }
+        didSet {
+            UserDefaults.standard.set(autoInstall, forKey: "autoInstallUpdates")
+            if autoInstall { Task { await check(userInitiated: false) } }
+        }
     }
     /// The app is doing something an update restart would interrupt.
     var isBusyElsewhere: () -> Bool = { false }
     private var timer: Task<Void, Never>?
 
     init() {
-        autoInstall = UserDefaults.standard.object(forKey: "autoInstallUpdates") as? Bool ?? true
+        autoInstall = UserDefaults.standard.bool(forKey: "autoInstallUpdates") // off until the user ticks it
     }
 
     var current: String { Updater.current }
@@ -324,6 +327,26 @@ final class UpdateModel: ObservableObject {
         }
         available = u
         if staged != nil { return }
+        guard autoInstall else {
+            status = "Version \(u.version) is available"
+            return
+        }
+        await fetch(u)
+        if !userInitiated { installIfQuiet() }
+    }
+
+    /// The Update button: downloads the available version and installs it now.
+    func update() {
+        guard let u = available, !busy else { return }
+        busy = true
+        Task {
+            await fetch(u)
+            busy = false
+            installNow()
+        }
+    }
+
+    private func fetch(_ u: AvailableUpdate) async {
         status = "Downloading \(u.version)…"
         Activity.log("Update \(u.version) found via \(u.source.rawValue)")
         do {
@@ -332,7 +355,6 @@ final class UpdateModel: ObservableObject {
             staged = try Updater.stage(dmg, version: u.version)
             status = "Version \(u.version) is ready to install"
             Activity.log("Update \(u.version) downloaded and verified (SHA-256, signature, identity)")
-            if userInitiated == false { installIfQuiet() }
         } catch {
             progress = nil
             try? FileManager.default.removeItem(at: Updater.workDir.appendingPathComponent(u.version))

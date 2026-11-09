@@ -42,15 +42,18 @@ model you already have through Ollama's own timers, calibrates every estimate
 to your Mac, and records measured speeds per model. See
 [Speed estimates](#speed-estimates).
 
-**Updates**: checks at launch and every 6 hours.
+**Updates**: off until you tick **Install updates automatically** in the
+sidebar. The app checks at launch and every 6 hours and tells you when a version
+is available; without the checkmark, nothing is downloaded or installed until you
+click **Update**.
 - **Sources, in order:** GitHub releases, the site feed
   `infinitetrading.io/downloads/latest.json`, then the GitHub CLI if you're
   signed in (`gh auth login`), for when the anonymous GitHub API is rate-limited.
 - **Checks before installing:** the release's SHA-256, a valid signature, the
   same bundle ID (and Developer ID team once notarized), and a higher version.
 - **Install:** a helper swaps the app after it quits (old copy to the Trash)
-  and relaunches it. This happens automatically when the window isn't in use,
-  or from **Restart to update**.
+  and relaunches it. With the checkmark on, this happens when the window isn't
+  in use, or from **Restart to update**. Otherwise it happens when you click **Update**.
 - **Changelog:** What's New shows the bundled `CHANGELOG.md`.
 
 **Keep models loaded**: **Unload idle** sets Ollama's `OLLAMA_KEEP_ALIVE`
@@ -196,6 +199,9 @@ xcrun swiftc -swift-version 5 mac/Sources/{Catalog,Speed}.swift tests/recommend/
 # Live chat test: both chat APIs, multi-turn context, Stop and errors, against
 # the Ollama on this Mac (default model llama3.2:1b)
 xcrun swiftc -swift-version 5 $(ls mac/Sources/*.swift | grep -v App.swift) tests/chat/main.swift -o build/chat-test && build/chat-test
+
+# Update consent: with automatic updates off, a check finds a release but downloads nothing
+xcrun swiftc -swift-version 5 $(ls mac/Sources/*.swift | grep -v App.swift) tests/updates/main.swift -o build/updates-test && build/updates-test
 
 # Live control test: restarts, re-ports (11434 → 11435 → 11434), stops and starts
 # the Ollama on this Mac (~1 minute of downtime, restores OLLAMA_HOST)

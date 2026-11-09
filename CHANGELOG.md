@@ -6,6 +6,14 @@ The current version is always the one in `mac/`, `catalog/` and `tests/`. From
 [`archive/<version>/`](archive). The 0.2.0 source was checked to rebuild its shipped
 executable exactly (normalized).
 
+## 0.6.1 — 2026-11-09 · Updates are your choice
+
+### Changed
+- Automatic updates are now off until you tick **Install updates
+  automatically** in the sidebar. Without the checkmark the app only tells you
+  when a new version is available; nothing is downloaded or installed until you
+  click **Update**.
+
 ## 0.6.0 — 2026-11-08 · Chat
 
 ### Added
