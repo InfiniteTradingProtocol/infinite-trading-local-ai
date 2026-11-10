@@ -6,6 +6,15 @@ The current version is always the one in `mac/`, `catalog/` and `tests/`. From
 [`archive/<version>/`](archive). The 0.2.0 source was checked to rebuild its shipped
 executable exactly (normalized).
 
+## 0.9.0 — 2026-11-09 · Agent window
+
+### Added
+- **The Infinite Agent in its own window**, connected to the model on this Mac
+  with no browser and no setup.
+- **Connect a wallet by QR code** with WalletConnect. The agent can read your
+  balances; every transaction is approved in your wallet, and this app never
+  holds a key.
+
 ## 0.8.0 — 2026-11-09 · Harnesses
 
 ### Added

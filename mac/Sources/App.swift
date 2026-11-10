@@ -32,6 +32,7 @@ struct AgentManagerApp: App {
             }
             CommandMenu("Connection") {
                 Button("Open Infinite Agent") { app.openAgent() }.keyboardShortcut("o")
+                Button("Open Infinite Agent in Browser") { app.openAgentInBrowser() }
                 Button("Check Again") { Task { await app.refresh(); await manager.refresh() } }.keyboardShortcut("r")
                 Divider()
                 Button("Stop Allowing Infinite Trading") { Task { await app.disconnectSite() } }

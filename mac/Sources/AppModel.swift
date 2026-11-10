@@ -118,7 +118,7 @@ final class AppModel: ObservableObject {
     }
     var running: Bool { if case .running = ollama { return true } else { return false } }
     var hasModel: Bool { !installed.filter { !$0.name.contains("embed") }.isEmpty }
-    var ready: Bool { running && hasModel && siteAllowed }
+    var ready: Bool { running && hasModel }
     var osTooOld: Bool { specs.osMajor < Ollama.minMacOS }
 
     func isInstalled(_ m: ModelInfo) -> Bool { !m.names.isDisjoint(with: installedNames) }
@@ -236,14 +236,28 @@ final class AppModel: ObservableObject {
         await refresh()
     }
 
-    /// The one-click path: Ollama → model → site access → open the agent.
+    /// The one-click path: Ollama → model → open the agent.
     func setUp(_ m: ModelInfo) async {
         error = nil
         guard await installOllama(), await download(m) else { return }
-        if !siteAllowed { guard await connectSite() else { return } }
-        notice = "\(m.title) is ready. Open the Infinite Agent and choose Ollama."
+        notice = "\(m.title) is ready. Opening the Infinite Agent."
         openAgent()
     }
 
-    func openAgent() { NSWorkspace.shared.open(SiteAccess.agentURL) }
+    func openAgent() {
+        Task {
+            guard await installOllama() else { return }
+            AgentWindow.shared.show(defaultModel: agentModel)
+        }
+    }
+
+    func openAgentInBrowser() { NSWorkspace.shared.open(SiteAccess.agentURL) }
+
+    /// What the Agent window starts on: the recommended model if it's here,
+    /// otherwise the first that can run the agent.
+    var agentModel: String? {
+        if let r = recommended, let name = r.names.first(where: installedNames.contains) { return name }
+        let excluded = Set(models.filter { !$0.recommendable }.flatMap(\.names))
+        return installed.map(\.name).filter { !excluded.contains($0) && !$0.contains("embed") }.sorted().first
+    }
 }

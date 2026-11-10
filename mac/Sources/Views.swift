@@ -203,8 +203,8 @@ struct Sidebar: View {
             .buttonStyle(PrimaryButton())
             .disabled(!app.ready)
             Text(app.ready
-                 ? "On the site choose Ollama → Connect. Accept the browser's local-network prompt if asked."
-                 : "Finish the three steps above to connect.")
+                 ? "Opens in its own window and connects to Ollama. Connect a wallet by scanning a QR code with your phone."
+                 : "Finish the steps above to connect.")
                 .font(.system(size: 10.5)).foregroundStyle(Theme.dim)
                 .fixedSize(horizontal: false, vertical: true)
             Rectangle().fill(Theme.stroke).frame(height: 1)
@@ -292,7 +292,7 @@ struct StepsCard: View {
                 }
                 if let job = app.ollamaJob { Bar(fraction: job.fraction).padding(.leading, 34) }
                 step(2, "A model", modelDetail, done: app.hasModel, busy: !app.pulls.isEmpty) { EmptyView() }
-                step(3, "Allow Infinite Trading", siteDetail, done: app.siteAllowed, busy: app.connecting) {
+                step(3, "Browser access (optional)", siteDetail, done: app.siteAllowed, busy: app.connecting) {
                     if app.running && !app.siteAllowed && !app.connecting {
                         Button("Allow") { Task { _ = await app.connectSite() } }
                             .buttonStyle(GhostButton(tint: Theme.violet))
@@ -556,7 +556,6 @@ struct Hero: View {
         var steps: [String] = []
         if !app.running { steps.append(Ollama.appURL == nil ? "installs Ollama" : "starts Ollama") }
         if !app.isInstalled(model) { steps.append("downloads \(formatGB(model.sizeGB))") }
-        if !app.siteAllowed { steps.append("allows the site") }
         return steps.isEmpty ? "" : steps.joined(separator: " · ").prefix(1).uppercased() + steps.joined(separator: " · ").dropFirst()
     }
 }

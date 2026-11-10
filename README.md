@@ -31,7 +31,7 @@ macOS 13+ (Ollama itself needs macOS 14+). Windows and Linux are coming.
    `https://www.infinitetrading.io` and `https://infinitetrading.io` to
    `OLLAMA_ORIGINS` (keeping existing entries) and restarts Ollama, then checks
    the result with a real CORS request.
-6. Opens the Infinite Agent. On the site, choose Ollama → Connect.
+6. Opens the Infinite Agent in its own window, connected to Ollama.
 Filters include **Tiny** (under 1 GB, from 92 MB) and **Uncensored** (labelled models with reduced refusals, never recommended automatically). **Chat only** marks models too small for the Infinite Agent.
 
 **Speed**: every model shows how fast it will run on *this* Mac: tokens per
@@ -158,6 +158,7 @@ architecture's slice of the same executable.
 |---|---|
 | `mac/Sources/Catalog.swift` | Model catalog, Mac specs, fit and recommendation rules |
 | `mac/Sources/Ollama.swift` | Ollama API, verified install, launchd environment, site access |
+| `mac/Sources/AgentWindow.swift` | The Agent window and its bridge from the site to Ollama (model calls only, our site only) |
 | `mac/Sources/Harnesses.swift` | The Harnesses tab: picks a model and opens a harness in Terminal |
 | `mac/Sources/Chat.swift` | The Chat tab: streaming over `/api/chat` or `/v1/chat/completions`, speed stats |
 | `mac/Sources/Manager.swift` | Server discovery (`ps`, `lsof`, `launchctl`), restart/stop/port, logs |
@@ -208,6 +209,9 @@ xcrun swiftc -swift-version 5 $(ls mac/Sources/*.swift | grep -v App.swift) test
 
 # Harness launch script (quoting, no auto-approve) and who owns an Ollama server
 xcrun swiftc -swift-version 5 $(ls mac/Sources/*.swift | grep -v App.swift) tests/harnesses/main.swift -o build/harnesses-test && build/harnesses-test
+
+# Agent window, live: loads the site in a hidden window and streams a chat through the bridge
+xcrun swiftc -swift-version 5 $(ls mac/Sources/*.swift | grep -v App.swift) tests/agent-bridge/main.swift -o build/agent-bridge-test && build/agent-bridge-test
 
 # Update consent: with automatic updates off, a check finds a release but downloads nothing
 xcrun swiftc -swift-version 5 $(ls mac/Sources/*.swift | grep -v App.swift) tests/updates/main.swift -o build/updates-test && build/updates-test

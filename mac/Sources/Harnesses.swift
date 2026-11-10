@@ -137,17 +137,11 @@ struct HarnessesView: View {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Infinite Agent").font(.system(size: 14, weight: .semibold))
-                    Text("Our trading agent, in your browser on infinitetrading.io, using the models on this Mac.")
+                    Text("Our trading agent in its own window, on the models on this Mac. Connect a wallet by scanning a QR code.")
                         .font(.system(size: 12)).foregroundStyle(Theme.dim)
                 }
                 Spacer()
-                Button("Open") {
-                    Task {
-                        guard await app.installOllama() else { return }
-                        if !app.siteAllowed { guard await app.connectSite() else { return } }
-                        app.openAgent()
-                    }
-                }
+                Button("Open") { app.openAgent() }
                 .buttonStyle(PrimaryButton(compact: true))
                 .fixedSize()
             }
