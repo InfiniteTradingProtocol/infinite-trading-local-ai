@@ -1,298 +1,298 @@
 {
-  "_comment": "Shared by the macOS and Windows apps. sizeGB = download size (Q4 default tag). minRAM = will load (may spill to CPU). recRAM = runs fully on the GPU with the agent's 16k context. rank = quality for the Infinite Agent (higher is better). paramsB = parameters (billions); activeB = parameters used per token for mixture-of-experts models (speed estimates). tags: uncensored and chat-only models are listed but never recommended; chat-only = too small or too short a context for the Infinite Agent.",
+  "_comment": "Shared by the macOS and Windows apps. sizeGB = download size (Q4 default tag). minRAM = will load (may spill to CPU). recRAM = runs fully on the GPU with the agent's 16k context. rank = quality score (higher is better): the LMArena text Elo (overall, leaderboard of 2026-11-09). rating.elo + rating.source = the leaderboard entry; basis base = a fine-tune scored by its base model minus 10; basis estimate = not on the leaderboard, placed by same-family models. paramsB = parameters (billions); activeB = parameters used per token for mixture-of-experts models (speed estimates). tags: uncensored and chat-only models are listed but never recommended; chat-only = too small or too short a context for the Infinite Agent.",
   "version": 1,
   "models": [
     {
       "id": "llama3.2:1b", "paramsB": 1.24, "aliases": [], "name": "Llama 3.2", "params": "1B", "publisher": "Meta",
-      "sizeGB": 1.3, "minRAM": 4, "recRAM": 8, "context": 128000, "rank": 18,
+      "sizeGB": 1.3, "minRAM": 4, "recRAM": 8, "context": 128000, "rank": 1055, "rating": {"elo": 1055, "source": "Llama 3.2 1B Instruct"},
       "tags": ["fast", "tools"],
       "summary": "Tiny and instant. Good for quick lookups and short summaries; too small for careful trade reasoning."
     },
     {
       "id": "qwen3:1.7b", "paramsB": 2.0, "aliases": [], "name": "Qwen3", "params": "1.7B", "publisher": "Alibaba",
-      "sizeGB": 1.4, "minRAM": 4, "recRAM": 8, "context": 40000, "rank": 24,
+      "sizeGB": 1.4, "minRAM": 4, "recRAM": 8, "context": 40000, "rank": 1170, "rating": {"basis": "estimate"},
       "tags": ["fast", "tools", "reasoning"],
       "summary": "Smallest model with a thinking mode. Runs on almost anything."
     },
     {
       "id": "llama3.2:3b", "paramsB": 3.2, "aliases": ["llama3.2", "llama3.2:latest"], "name": "Llama 3.2", "params": "3B", "publisher": "Meta",
-      "sizeGB": 2.0, "minRAM": 6, "recRAM": 8, "context": 128000, "rank": 42,
+      "sizeGB": 2.0, "minRAM": 6, "recRAM": 8, "context": 128000, "rank": 1110, "rating": {"elo": 1110, "source": "Llama 3.2 3B Instruct"},
       "tags": ["fast", "tools"],
       "summary": "The site's default suggestion. Quick, light, follows instructions well for its size."
     },
     {
       "id": "gemma3:4b", "paramsB": 4.3, "aliases": [], "name": "Gemma 3", "params": "4B", "publisher": "Google",
-      "sizeGB": 3.3, "minRAM": 8, "recRAM": 8, "context": 128000, "rank": 44,
+      "sizeGB": 3.3, "minRAM": 8, "recRAM": 8, "context": 128000, "rank": 1291, "rating": {"elo": 1291, "source": "Gemma 3 4B IT"},
       "tags": ["vision"],
       "summary": "Small multimodal model with clear writing. Can read chart screenshots."
     },
     {
       "id": "qwen3:4b", "paramsB": 4.0, "aliases": [], "name": "Qwen3", "params": "4B", "publisher": "Alibaba",
-      "sizeGB": 2.5, "minRAM": 6, "recRAM": 8, "context": 256000, "rank": 50,
+      "sizeGB": 2.5, "minRAM": 6, "recRAM": 8, "context": 256000, "rank": 1250, "rating": {"basis": "estimate"},
       "tags": ["tools", "reasoning"],
       "summary": "Best quality for 8 GB Macs. Strong at numbers and step-by-step reasoning."
     },
     {
       "id": "llama3.1:8b", "paramsB": 8.0, "aliases": [], "name": "Llama 3.1", "params": "8B", "publisher": "Meta",
-      "sizeGB": 4.9, "minRAM": 10, "recRAM": 16, "context": 128000, "rank": 58,
+      "sizeGB": 4.9, "minRAM": 10, "recRAM": 16, "context": 128000, "rank": 1187, "rating": {"elo": 1187, "source": "Llama 3.1 8B Instruct"},
       "tags": ["tools"],
       "summary": "Dependable all-rounder with a long context window."
     },
     {
       "id": "qwen2.5:7b", "paramsB": 7.6, "aliases": [], "name": "Qwen2.5", "params": "7B", "publisher": "Alibaba",
-      "sizeGB": 4.7, "minRAM": 10, "recRAM": 16, "context": 32000, "rank": 60,
+      "sizeGB": 4.7, "minRAM": 10, "recRAM": 16, "context": 32000, "rank": 1180, "rating": {"basis": "estimate"},
       "tags": ["tools"],
       "summary": "Answers straight away (no thinking step). Good with tables and market data."
     },
     {
       "id": "deepseek-r1:8b", "paramsB": 8.2, "aliases": [], "name": "DeepSeek-R1", "params": "8B", "publisher": "DeepSeek",
-      "sizeGB": 5.2, "minRAM": 10, "recRAM": 16, "context": 128000, "rank": 54,
+      "sizeGB": 5.2, "minRAM": 10, "recRAM": 16, "context": 128000, "rank": 1270, "rating": {"basis": "estimate"},
       "tags": ["reasoning"],
       "summary": "Thinks at length before answering. Thorough, but replies take longer."
     },
     {
       "id": "qwen3:8b", "paramsB": 8.2, "aliases": [], "name": "Qwen3", "params": "8B", "publisher": "Alibaba",
-      "sizeGB": 5.2, "minRAM": 10, "recRAM": 16, "context": 40000, "rank": 66,
+      "sizeGB": 5.2, "minRAM": 10, "recRAM": 16, "context": 40000, "rank": 1280, "rating": {"basis": "estimate"},
       "tags": ["tools", "reasoning"],
       "summary": "Best balance for 16 GB Macs: solid analysis, tool use and speed."
     },
     {
       "id": "mistral-nemo:12b", "paramsB": 12.2, "aliases": ["mistral-nemo", "mistral-nemo:latest"], "name": "Mistral NeMo", "params": "12B", "publisher": "Mistral AI · NVIDIA",
-      "sizeGB": 7.1, "minRAM": 12, "recRAM": 18, "context": 128000, "rank": 62,
+      "sizeGB": 7.1, "minRAM": 12, "recRAM": 18, "context": 128000, "rank": 1195, "rating": {"basis": "estimate"},
       "tags": ["tools"],
       "summary": "Fluent writer with a 128k context. Good for long reports."
     },
     {
       "id": "gemma3:12b", "paramsB": 12.2, "aliases": [], "name": "Gemma 3", "params": "12B", "publisher": "Google",
-      "sizeGB": 8.1, "minRAM": 14, "recRAM": 18, "context": 128000, "rank": 68,
+      "sizeGB": 8.1, "minRAM": 14, "recRAM": 18, "context": 128000, "rank": 1334, "rating": {"elo": 1334, "source": "Gemma 3 12B IT"},
       "tags": ["vision"],
       "summary": "Well-rounded multimodal model. Reads charts and explains them clearly."
     },
     {
       "id": "phi4:14b", "paramsB": 14.7, "aliases": ["phi4", "phi4:latest"], "name": "Phi-4", "params": "14B", "publisher": "Microsoft",
-      "sizeGB": 9.1, "minRAM": 14, "recRAM": 24, "context": 16000, "rank": 70,
+      "sizeGB": 9.1, "minRAM": 14, "recRAM": 24, "context": 16000, "rank": 1217, "rating": {"elo": 1217, "source": "Phi-4"},
       "tags": [],
       "summary": "Strong at maths and logic for its size. Context is exactly the agent's 16k."
     },
     {
       "id": "qwen3:14b", "paramsB": 14.8, "aliases": [], "name": "Qwen3", "params": "14B", "publisher": "Alibaba",
-      "sizeGB": 9.3, "minRAM": 14, "recRAM": 24, "context": 40000, "rank": 78,
+      "sizeGB": 9.3, "minRAM": 14, "recRAM": 24, "context": 40000, "rank": 1310, "rating": {"basis": "estimate"},
       "tags": ["tools", "reasoning"],
       "summary": "Noticeably sharper analysis than 8B models. Great fit for 24 GB Macs."
     },
     {
       "id": "gpt-oss:20b", "paramsB": 21.0, "activeB": 3.6, "aliases": [], "name": "gpt-oss", "params": "20B", "publisher": "OpenAI",
-      "sizeGB": 14, "minRAM": 16, "recRAM": 24, "context": 128000, "rank": 82,
+      "sizeGB": 14, "minRAM": 16, "recRAM": 24, "context": 128000, "rank": 1288, "rating": {"elo": 1288, "source": "gpt-oss-20b"},
       "tags": ["tools", "reasoning", "fast"],
       "summary": "OpenAI's open-weight model. Mixture-of-experts, so it is quick for its quality."
     },
     {
       "id": "gemma3:27b", "paramsB": 27.4, "aliases": [], "name": "Gemma 3", "params": "27B", "publisher": "Google",
-      "sizeGB": 17, "minRAM": 24, "recRAM": 32, "context": 128000, "rank": 80,
+      "sizeGB": 17, "minRAM": 24, "recRAM": 32, "context": 128000, "rank": 1358, "rating": {"elo": 1358, "source": "Gemma 3 27B IT"},
       "tags": ["vision"],
       "summary": "Google's largest open Gemma. Excellent writing and chart reading."
     },
     {
       "id": "qwen3:30b", "paramsB": 30.5, "activeB": 3.3, "aliases": [], "name": "Qwen3", "params": "30B (3B active)", "publisher": "Alibaba",
-      "sizeGB": 19, "minRAM": 24, "recRAM": 32, "context": 256000, "rank": 86,
+      "sizeGB": 19, "minRAM": 24, "recRAM": 32, "context": 256000, "rank": 1317, "rating": {"elo": 1317, "source": "Qwen3-30B-A3B"},
       "tags": ["tools", "reasoning", "fast"],
       "summary": "Mixture-of-experts: near-32B quality at small-model speed. Top pick for 32 GB."
     },
     {
       "id": "qwen3:32b", "paramsB": 32.8, "aliases": [], "name": "Qwen3", "params": "32B", "publisher": "Alibaba",
-      "sizeGB": 20, "minRAM": 28, "recRAM": 40, "context": 40000, "rank": 88,
+      "sizeGB": 20, "minRAM": 28, "recRAM": 40, "context": 40000, "rank": 1340, "rating": {"elo": 1340, "source": "Qwen3-32B"},
       "tags": ["tools", "reasoning"],
       "summary": "Dense 32B model. The most careful analyst that fits a 48 GB Mac."
     },
     {
       "id": "llama3.3:70b", "paramsB": 70.6, "aliases": [], "name": "Llama 3.3", "params": "70B", "publisher": "Meta",
-      "sizeGB": 43, "minRAM": 48, "recRAM": 64, "context": 128000, "rank": 84,
+      "sizeGB": 43, "minRAM": 48, "recRAM": 64, "context": 128000, "rank": 1274, "rating": {"elo": 1274, "source": "Llama 3.3 70B Instruct"},
       "tags": ["tools"],
       "summary": "Large, knowledgeable and steady. Needs a 64 GB Mac; replies are slower."
     },
     {
       "id": "gpt-oss:120b", "paramsB": 117.0, "activeB": 5.1, "aliases": [], "name": "gpt-oss", "params": "120B", "publisher": "OpenAI",
-      "sizeGB": 65, "minRAM": 80, "recRAM": 96, "context": 128000, "rank": 95,
+      "sizeGB": 65, "minRAM": 80, "recRAM": 96, "context": 128000, "rank": 1365, "rating": {"elo": 1365, "source": "gpt-oss-120b"},
       "tags": ["tools", "reasoning"],
       "summary": "Frontier-class open model for 96 GB+ Macs. Closest to hosted AI quality."
     },
     {
       "id": "smollm:135m", "paramsB": 0.135, "aliases": [], "name": "SmolLM", "params": "135M", "publisher": "Hugging Face",
-      "sizeGB": 0.09, "minRAM": 2, "recRAM": 4, "context": 2048, "rank": 3,
+      "sizeGB": 0.09, "minRAM": 2, "recRAM": 4, "context": 2048, "rank": 920, "rating": {"basis": "estimate"},
       "tags": ["fast", "chat-only"],
       "summary": "The smallest here, under 100 MB. Fun to try; expect simple, often wrong answers."
     },
     {
       "id": "smollm2:135m", "paramsB": 0.135, "aliases": [], "name": "SmolLM2", "params": "135M", "publisher": "Hugging Face",
-      "sizeGB": 0.27, "minRAM": 2, "recRAM": 4, "context": 8192, "rank": 4,
+      "sizeGB": 0.27, "minRAM": 2, "recRAM": 4, "context": 8192, "rank": 940, "rating": {"basis": "estimate"},
       "tags": ["fast", "chat-only"],
       "summary": "Newer SmolLM at the same size, with a larger context. A demo of how small a model can be."
     },
     {
       "id": "smollm:360m", "paramsB": 0.362, "aliases": [], "name": "SmolLM", "params": "360M", "publisher": "Hugging Face",
-      "sizeGB": 0.23, "minRAM": 2, "recRAM": 4, "context": 2048, "rank": 5,
+      "sizeGB": 0.23, "minRAM": 2, "recRAM": 4, "context": 2048, "rank": 960, "rating": {"basis": "estimate"},
       "tags": ["fast", "chat-only"],
       "summary": "A little more capable than the 135M. Short replies only."
     },
     {
       "id": "gemma3:270m", "paramsB": 0.268, "aliases": [], "name": "Gemma 3", "params": "270M", "publisher": "Google",
-      "sizeGB": 0.29, "minRAM": 2, "recRAM": 4, "context": 32000, "rank": 6,
+      "sizeGB": 0.29, "minRAM": 2, "recRAM": 4, "context": 32000, "rank": 950, "rating": {"basis": "estimate"},
       "tags": ["fast", "chat-only"],
       "summary": "Google's tiniest Gemma. Best for short, simple text tasks."
     },
     {
       "id": "smollm2:360m", "paramsB": 0.362, "aliases": [], "name": "SmolLM2", "params": "360M", "publisher": "Hugging Face",
-      "sizeGB": 0.73, "minRAM": 2, "recRAM": 4, "context": 8192, "rank": 7,
+      "sizeGB": 0.73, "minRAM": 2, "recRAM": 4, "context": 8192, "rank": 990, "rating": {"basis": "estimate"},
       "tags": ["fast", "chat-only"],
       "summary": "Higher-precision SmolLM2. Still a small-talk and simple-text model."
     },
     {
       "id": "tinyllama:1.1b", "paramsB": 1.0, "aliases": [], "name": "TinyLlama", "params": "1.1B", "publisher": "Community",
-      "sizeGB": 0.64, "minRAM": 2, "recRAM": 4, "context": 2048, "rank": 8,
+      "sizeGB": 0.64, "minRAM": 2, "recRAM": 4, "context": 2048, "rank": 975, "rating": {"basis": "estimate"},
       "tags": ["fast", "chat-only"],
       "summary": "A classic tiny chat model. Its short context limits it to brief exchanges."
     },
     {
       "id": "qwen2.5:0.5b", "paramsB": 0.494, "aliases": [], "name": "Qwen 2.5", "params": "494M", "publisher": "Alibaba",
-      "sizeGB": 0.4, "minRAM": 2, "recRAM": 4, "context": 32000, "rank": 9,
+      "sizeGB": 0.4, "minRAM": 2, "recRAM": 4, "context": 32000, "rank": 1000, "rating": {"basis": "estimate"},
       "tags": ["fast", "tools", "chat-only"],
       "summary": "Half a billion parameters with tool-use support. The most useful model under 1B."
     },
     {
       "id": "granite4:350m", "paramsB": 0.352, "aliases": [], "name": "Granite 4", "params": "350M", "publisher": "IBM",
-      "sizeGB": 0.71, "minRAM": 2, "recRAM": 4, "context": 32000, "rank": 10,
+      "sizeGB": 0.71, "minRAM": 2, "recRAM": 4, "context": 32000, "rank": 985, "rating": {"basis": "estimate"},
       "tags": ["fast", "tools", "chat-only"],
       "summary": "IBM's small model for simple tasks and tool calls."
     },
     {
       "id": "lfm2.5-thinking:1.2b", "paramsB": 1.2, "aliases": [], "name": "LFM 2.5 Thinking", "params": "1.2B", "publisher": "Liquid AI",
-      "sizeGB": 0.73, "minRAM": 4, "recRAM": 8, "context": 125000, "rank": 12,
+      "sizeGB": 0.73, "minRAM": 4, "recRAM": 8, "context": 125000, "rank": 1080, "rating": {"basis": "estimate"},
       "tags": ["fast", "reasoning"],
       "summary": "A very small model with a thinking mode and a long context."
     },
     {
       "id": "qwen2.5:1.5b", "paramsB": 1.5, "aliases": [], "name": "Qwen 2.5", "params": "1.5B", "publisher": "Alibaba",
-      "sizeGB": 0.99, "minRAM": 4, "recRAM": 6, "context": 32000, "rank": 16,
+      "sizeGB": 0.99, "minRAM": 4, "recRAM": 6, "context": 32000, "rank": 1075, "rating": {"basis": "estimate"},
       "tags": ["fast", "tools"],
       "summary": "Very small with tool use, and quick on any Mac."
     },
     {
       "id": "tinydolphin:1.1b", "paramsB": 1.0, "aliases": [], "name": "TinyDolphin", "params": "1.1B", "publisher": "Cognitive Computations",
-      "sizeGB": 0.64, "minRAM": 2, "recRAM": 4, "context": 4096, "rank": 7,
+      "sizeGB": 0.64, "minRAM": 2, "recRAM": 4, "context": 4096, "rank": 965, "rating": {"basis": "estimate"},
       "tags": ["uncensored", "fast", "chat-only"],
       "summary": "The smallest uncensored model here. Short exchanges only."
     },
     {
       "id": "dolphin-phi:2.7b", "paramsB": 3.0, "aliases": [], "name": "Dolphin Phi", "params": "2.7B", "publisher": "Cognitive Computations",
-      "sizeGB": 1.6, "minRAM": 4, "recRAM": 6, "context": 2048, "rank": 20,
+      "sizeGB": 1.6, "minRAM": 4, "recRAM": 6, "context": 2048, "rank": 1040, "rating": {"basis": "estimate"},
       "tags": ["uncensored", "chat-only"],
       "summary": "Phi-2 retrained to refuse less. Small, with a short context."
     },
     {
       "id": "llama2-uncensored:7b", "paramsB": 7.0, "aliases": [], "name": "Llama 2 Uncensored", "params": "7B", "publisher": "Community",
-      "sizeGB": 3.8, "minRAM": 8, "recRAM": 10, "context": 2048, "rank": 36,
+      "sizeGB": 3.8, "minRAM": 8, "recRAM": 10, "context": 2048, "rank": 1043, "rating": {"elo": 1053, "source": "Llama 2 7B Chat", "basis": "base"},
       "tags": ["uncensored", "chat-only"],
       "summary": "An older Llama 2 fine-tune without refusals. Short context."
     },
     {
       "id": "wizard-vicuna-uncensored:7b", "paramsB": 7.0, "aliases": [], "name": "Wizard Vicuna Uncensored", "params": "7B", "publisher": "Community",
-      "sizeGB": 3.8, "minRAM": 8, "recRAM": 10, "context": 2048, "rank": 37,
+      "sizeGB": 3.8, "minRAM": 8, "recRAM": 10, "context": 2048, "rank": 1021, "rating": {"elo": 1031, "source": "Vicuna 7B", "basis": "base"},
       "tags": ["uncensored", "chat-only"],
       "summary": "Vicuna retrained with its refusals removed. Short context."
     },
     {
       "id": "wizard-vicuna-uncensored:13b", "paramsB": 13.0, "aliases": [], "name": "Wizard Vicuna Uncensored", "params": "13B", "publisher": "Community",
-      "sizeGB": 7.4, "minRAM": 12, "recRAM": 14, "context": 2048, "rank": 45,
+      "sizeGB": 7.4, "minRAM": 12, "recRAM": 14, "context": 2048, "rank": 1048, "rating": {"elo": 1058, "source": "Vicuna 13B", "basis": "base"},
       "tags": ["uncensored", "chat-only"],
       "summary": "The larger Wizard Vicuna. Better writing, same short context."
     },
     {
       "id": "wizard-vicuna-uncensored:30b", "paramsB": 30.0, "aliases": [], "name": "Wizard Vicuna Uncensored", "params": "30B", "publisher": "Community",
-      "sizeGB": 18, "minRAM": 24, "recRAM": 28, "context": 2048, "rank": 52,
+      "sizeGB": 18, "minRAM": 24, "recRAM": 28, "context": 2048, "rank": 1095, "rating": {"elo": 1105, "source": "Vicuna 33B", "basis": "base"},
       "tags": ["uncensored", "chat-only"],
       "summary": "The largest Wizard Vicuna, for long-form writing in short sessions."
     },
     {
       "id": "dolphin-mistral:7b", "paramsB": 7.0, "aliases": [], "name": "Dolphin Mistral", "params": "7B", "publisher": "Cognitive Computations",
-      "sizeGB": 4.1, "minRAM": 8, "recRAM": 10, "context": 32000, "rank": 48,
+      "sizeGB": 4.1, "minRAM": 8, "recRAM": 10, "context": 32000, "rank": 1081, "rating": {"elo": 1081, "source": "Dolphin 2.2.1 Mistral 7B"},
       "tags": ["uncensored"],
       "summary": "Mistral 7B retrained to refuse less, with room for a long conversation."
     },
     {
       "id": "dolphin-llama3:8b", "paramsB": 8.0, "aliases": [], "name": "Dolphin Llama 3", "params": "8B", "publisher": "Cognitive Computations",
-      "sizeGB": 4.7, "minRAM": 10, "recRAM": 10, "context": 8192, "rank": 50,
+      "sizeGB": 4.7, "minRAM": 10, "recRAM": 10, "context": 8192, "rank": 1156, "rating": {"elo": 1166, "source": "Llama 3 8B Instruct", "basis": "base"},
       "tags": ["uncensored", "chat-only"],
       "summary": "Llama 3 8B retrained to refuse less."
     },
     {
       "id": "dolphin3:8b", "paramsB": 8.0, "aliases": [], "name": "Dolphin 3", "params": "8B", "publisher": "Cognitive Computations",
-      "sizeGB": 4.9, "minRAM": 10, "recRAM": 10, "context": 128000, "rank": 56,
+      "sizeGB": 4.9, "minRAM": 10, "recRAM": 10, "context": 128000, "rank": 1177, "rating": {"elo": 1187, "source": "Llama 3.1 8B Instruct", "basis": "base"},
       "tags": ["uncensored"],
       "summary": "The newest Dolphin: general-purpose, follows your instructions, long context."
     },
     {
       "id": "dolphin-mixtral:8x7b", "paramsB": 46.7, "activeB": 13, "aliases": [], "name": "Dolphin Mixtral", "params": "8x7B", "publisher": "Cognitive Computations",
-      "sizeGB": 26, "minRAM": 32, "recRAM": 36, "context": 32000, "rank": 74,
+      "sizeGB": 26, "minRAM": 32, "recRAM": 36, "context": 32000, "rank": 1122, "rating": {"elo": 1132, "source": "Mixtral 8x7B Instruct v0.1", "basis": "base"},
       "tags": ["uncensored"],
       "summary": "Mixture-of-experts Dolphin for Macs with plenty of memory."
     },
     {
       "id": "dolphin-llama3:70b", "paramsB": 71.0, "aliases": [], "name": "Dolphin Llama 3", "params": "70B", "publisher": "Cognitive Computations",
-      "sizeGB": 40, "minRAM": 48, "recRAM": 56, "context": 8192, "rank": 76,
+      "sizeGB": 40, "minRAM": 48, "recRAM": 56, "context": 8192, "rank": 1211, "rating": {"elo": 1221, "source": "Llama 3 70B Instruct", "basis": "base"},
       "tags": ["uncensored", "chat-only"],
       "summary": "The largest Dolphin, for 64 GB+ Macs."
     },
     {
       "id": "huihui_ai/llama3.2-abliterate:1b", "paramsB": 1.5, "aliases": [], "name": "Llama 3.2 Abliterated", "params": "1B", "publisher": "huihui_ai (community)",
-      "sizeGB": 0.96, "minRAM": 4, "recRAM": 8, "context": 128000, "rank": 15,
+      "sizeGB": 0.96, "minRAM": 4, "recRAM": 8, "context": 128000, "rank": 1045, "rating": {"elo": 1055, "source": "Llama 3.2 1B Instruct", "basis": "base"},
       "tags": ["uncensored", "fast", "tools"],
       "summary": "Llama 3.2 with its refusal behaviour removed. Very small."
     },
     {
       "id": "huihui_ai/llama3.2-abliterate:3b", "paramsB": 3.6, "aliases": [], "name": "Llama 3.2 Abliterated", "params": "3B", "publisher": "huihui_ai (community)",
-      "sizeGB": 2.2, "minRAM": 6, "recRAM": 8, "context": 128000, "rank": 38,
+      "sizeGB": 2.2, "minRAM": 6, "recRAM": 8, "context": 128000, "rank": 1100, "rating": {"elo": 1110, "source": "Llama 3.2 3B Instruct", "basis": "base"},
       "tags": ["uncensored", "fast", "tools"],
       "summary": "Small and quick, with tool use and a long context."
     },
     {
       "id": "huihui_ai/qwen3-abliterated:4b", "paramsB": 4.0, "aliases": [], "name": "Qwen3 Abliterated", "params": "4B", "publisher": "huihui_ai (community)",
-      "sizeGB": 2.5, "minRAM": 6, "recRAM": 8, "context": 40000, "rank": 46,
+      "sizeGB": 2.5, "minRAM": 6, "recRAM": 8, "context": 40000, "rank": 1240, "rating": {"basis": "estimate"},
       "tags": ["uncensored", "tools", "reasoning"],
       "summary": "Qwen3 with its refusal behaviour removed. Thinking mode and tool use."
     },
     {
       "id": "huihui_ai/qwen2.5-abliterate:7b", "paramsB": 7.6, "aliases": [], "name": "Qwen 2.5 Abliterated", "params": "7B", "publisher": "huihui_ai (community)",
-      "sizeGB": 4.7, "minRAM": 10, "recRAM": 10, "context": 32000, "rank": 55,
+      "sizeGB": 4.7, "minRAM": 10, "recRAM": 10, "context": 32000, "rank": 1170, "rating": {"basis": "estimate"},
       "tags": ["uncensored", "tools"],
       "summary": "A solid mid-size model with refusals removed and tool use."
     },
     {
       "id": "huihui_ai/qwen3-abliterated:8b", "paramsB": 8.2, "aliases": [], "name": "Qwen3 Abliterated", "params": "8B", "publisher": "huihui_ai (community)",
-      "sizeGB": 5.0, "minRAM": 10, "recRAM": 10, "context": 40000, "rank": 61,
+      "sizeGB": 5.0, "minRAM": 10, "recRAM": 10, "context": 40000, "rank": 1270, "rating": {"basis": "estimate"},
       "tags": ["uncensored", "tools", "reasoning"],
       "summary": "Mid-size Qwen3 with thinking and tool use."
     },
     {
       "id": "huihui_ai/deepseek-r1-abliterated:8b", "paramsB": 8.2, "aliases": [], "name": "DeepSeek-R1 Abliterated", "params": "8B", "publisher": "huihui_ai (community)",
-      "sizeGB": 5.0, "minRAM": 10, "recRAM": 10, "context": 128000, "rank": 51,
+      "sizeGB": 5.0, "minRAM": 10, "recRAM": 10, "context": 128000, "rank": 1260, "rating": {"basis": "estimate"},
       "tags": ["uncensored", "reasoning"],
       "summary": "A reasoning model with refusals removed. Slow to start, shows its thinking."
     },
     {
       "id": "huihui_ai/qwen3-abliterated:14b", "paramsB": 14.8, "aliases": [], "name": "Qwen3 Abliterated", "params": "14B", "publisher": "huihui_ai (community)",
-      "sizeGB": 9.0, "minRAM": 14, "recRAM": 16, "context": 40000, "rank": 73,
+      "sizeGB": 9.0, "minRAM": 14, "recRAM": 16, "context": 40000, "rank": 1300, "rating": {"basis": "estimate"},
       "tags": ["uncensored", "tools", "reasoning"],
       "summary": "Larger Qwen3 with refusals removed."
     },
     {
       "id": "huihui_ai/gpt-oss-abliterated:20b", "paramsB": 20.9, "aliases": [], "name": "gpt-oss Abliterated", "params": "20B", "publisher": "huihui_ai (community)",
-      "sizeGB": 14, "minRAM": 16, "recRAM": 20, "context": 128000, "rank": 77,
+      "sizeGB": 14, "minRAM": 16, "recRAM": 20, "context": 128000, "rank": 1278, "rating": {"elo": 1288, "source": "gpt-oss-20b", "basis": "base"},
       "tags": ["uncensored", "tools", "reasoning"],
       "summary": "gpt-oss with refusals removed."
     },
     {
       "id": "huihui_ai/qwen3-abliterated:32b", "paramsB": 32.8, "aliases": [], "name": "Qwen3 Abliterated", "params": "32B", "publisher": "huihui_ai (community)",
-      "sizeGB": 20, "minRAM": 28, "recRAM": 32, "context": 40000, "rank": 83,
+      "sizeGB": 20, "minRAM": 28, "recRAM": 32, "context": 40000, "rank": 1330, "rating": {"elo": 1340, "source": "Qwen3-32B", "basis": "base"},
       "tags": ["uncensored", "tools"],
       "summary": "The largest Qwen3 abliterated here."
     }

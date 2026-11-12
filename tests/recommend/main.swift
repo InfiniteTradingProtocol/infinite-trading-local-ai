@@ -17,8 +17,8 @@ for m in catalog.models {
 }
 
 let expected: [(MacSpecs, String)] = [
-    (mac(8), "qwen3:4b"), (mac(16), "qwen3:8b"), (mac(24), "gpt-oss:20b"),
-    (mac(32), "qwen3:30b"), (mac(48), "qwen3:32b"), (mac(64), "qwen3:32b"),
+    (mac(8), "gemma3:4b"), (mac(16), "gemma3:4b"), (mac(24), "gemma3:12b"),
+    (mac(32), "gemma3:27b"), (mac(48), "gemma3:27b"), (mac(64), "gemma3:27b"),
     (mac(128), "gpt-oss:120b"), (mac(16, arm: false), "llama3.2:3b"),
 ]
 for (s, want) in expected {
@@ -56,9 +56,34 @@ check(abs(i3b.genTPS - 5.5) < 1.5 && abs(i3b.firstReplySeconds - 57) < 20, "Inte
 check(speed(intel)(model("qwen3:14b")).tier == .veryslow, "14B is very slow on an Intel CPU")
 // Speed-aware pick: an M1 with 64 GB fits dense 32B but it would crawl; take the MoE 30B.
 let m1 = mac(64, chip: "Apple M1")
-check(recommend(catalog.models, for: m1)?.id == "qwen3:32b", "fit-only pick on M1 64 GB is qwen3:32b")
-check(recommend(catalog.models, for: m1, speed: speed(m1))?.id == "qwen3:30b", "speed-aware pick on M1 64 GB skips the very slow 32B")
+check(recommend(catalog.models, for: m1, speed: speed(m1))?.id == "qwen3:30b", "speed-aware pick on M1 64 GB takes the MoE 30B over slow dense models")
+check(recommend(catalog.models, for: m1)?.id == "gemma3:27b", "fit-only pick on M1 64 GB is gemma3:27b")
 check(recommend(catalog.models, for: intel, speed: speed(intel))?.id == "llama3.2:3b", "Intel keeps the readable 3B")
+// Top 3 per Library tab: best rated first, runs here, uncensored only on the Uncensored tab.
+for gb in [8.0, 16, 24, 32, 64, 128] {
+    let top = topRated(catalog.models, on: mac(gb))
+    print(String(format: "%4.0f GB top 3: ", gb) + top.map(\.id).joined(separator: ", "))
+    check(top.count == 3, "\(Int(gb)) GB has three recommended models")
+    check(top.allSatisfy { !$0.uncensored && fit($0, on: mac(gb)) >= .slow }, "\(Int(gb)) GB top 3 is censored and runs")
+    check(top.first?.id == recommend(catalog.models, for: mac(gb))?.id, "\(Int(gb)) GB top 3 starts with the hero pick")
+}
+for gb in [16.0, 36, 64] {
+    let s = mac(gb, chip: "Apple M3 Pro"), sp = speed(s)
+    let top = topRated(catalog.models, on: s, speed: sp)
+    print(String(format: "%4.0f GB M3 Pro, speed-aware: ", gb) + top.map { "\($0.id) \(sp($0).label)" }.joined(separator: ", "))
+    check(top.first?.id == recommend(catalog.models, for: s, speed: sp)?.id, "\(Int(gb)) GB speed-aware top 3 starts with the hero pick")
+    check(top.allSatisfy { sp($0).tier >= .ok }, "\(Int(gb)) GB M3 Pro top 3 all answer at a comfortable speed")
+}
+let unc = topRated(catalog.models.filter(\.uncensored), on: mac(32))
+print("32 GB uncensored top 3:", unc.map(\.id))
+check(unc.count == 3 && unc.allSatisfy(\.uncensored), "Uncensored tab recommends uncensored models")
+let tiny = topRated(catalog.models.filter { $0.sizeGB < 1 }, on: mac(8))
+print("8 GB tiny top 3:", tiny.map(\.id))
+check(tiny.count == 3 && !tiny.contains { $0.uncensored }, "Tiny tab recommends three censored tiny models")
+check(topRated(catalog.models, on: mac(128), installed: ["smollm:135m"]).first?.id == "gpt-oss:120b", "installed small models don't jump the list")
+check(topRated(catalog.models.filter { $0.id == "llama3.3:70b" }, on: mac(16)).isEmpty, "a model that doesn't fit is never recommended")
+for m in catalog.models { check(m.rating != nil && !m.ratingLabel.isEmpty, "\(m.id) has a rating") }
+
 // Calibration reproduces the measured model exactly.
 let b = Benchmark(model: "llama3.2:3b", genTPS: 5.5, promptTPS: 52, loadSeconds: 5, at: Date())
 let cal = Speed.calibrate(from: b, model: model("llama3.2:3b"), sizeGB: 2.0, paramsB: 3.2, overheadS: Speed.intelOverhead)

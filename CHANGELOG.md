@@ -6,6 +6,18 @@ The current version is always the one in `mac/`, `catalog/` and `tests/`. From
 [`archive/<version>/`](archive). The 0.2.0 source was checked to rebuild its shipped
 executable exactly (normalized).
 
+## 0.9.2 — 2026-11-12
+
+### Changed
+- **Recommended models first.** Every Library tab opens with its three best
+  models for this Mac, then **Other models** below, so every option stays
+  visible. The Chat menu and the Harnesses picker group the same way.
+- Model rankings come from public ratings: the LMArena text leaderboard
+  (2026-11-09). Each model shows its score, for example `Arena 1358`. Fine-tunes
+  use their base model's score, and models not on the leaderboard are marked
+  `Est.`. Models that fit fully on this Mac's GPU come before better-rated ones
+  that would run slower.
+
 ## 0.9.1 — 2026-11-09
 
 ### Changed

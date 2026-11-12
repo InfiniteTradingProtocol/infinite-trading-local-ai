@@ -63,7 +63,16 @@ struct HarnessesView: View {
 
     private var models: [String] {
         let chatOnly = Set(app.models.filter { $0.tags.contains("chat-only") }.flatMap(\.names))
-        return app.installed.map(\.name).filter { !$0.contains("embed") && !chatOnly.contains($0) }.sorted()
+        return app.installed.map(\.name).filter { !$0.contains("embed") && !chatOnly.contains($0) }
+            .sorted { (rank($0), $1) > (rank($1), $0) }
+    }
+
+    private func info(_ name: String) -> ModelInfo? { app.models.first { $0.names.contains(name) } }
+    private func rank(_ name: String) -> Int { info(name)?.rank ?? 0 }
+
+    /// Best-rated installed models that can call tools (coding agents need them).
+    private var recommended: [String] {
+        Array(models.filter { info($0).map { $0.tags.contains("tools") && !$0.uncensored } ?? false }.prefix(3))
     }
 
     var body: some View {
@@ -95,7 +104,13 @@ struct HarnessesView: View {
                         .font(.system(size: 12.5)).foregroundStyle(Theme.dim)
                 } else {
                     Picker("Model", selection: $model) {
-                        ForEach(models, id: \.self) { Text($0).tag($0) }
+                        let top = recommended
+                        if !top.isEmpty {
+                            Section("Recommended models") { ForEach(top, id: \.self) { Text($0).tag($0) } }
+                        }
+                        Section(top.isEmpty ? "Models" : "Other models") {
+                            ForEach(models.filter { !top.contains($0) }, id: \.self) { Text($0).tag($0) }
+                        }
                     }
                     .frame(maxWidth: 420)
                 }
@@ -150,7 +165,7 @@ struct HarnessesView: View {
 
     private func pickDefault() {
         let uncensored = Set(app.models.filter(\.uncensored).flatMap(\.names))
-        if !models.contains(model) { model = models.first { !uncensored.contains($0) } ?? models.first ?? "" }
+        if !models.contains(model) { model = recommended.first ?? models.first { !uncensored.contains($0) } ?? models.first ?? "" }
     }
 
     private func open(_ h: Harness) {

@@ -401,16 +401,29 @@ struct LibraryView: View {
                 }
 
                 if filter == .uncensored {
-                    Text("These models have had their refusals reduced or removed, so they answer what others decline. They can be wrong or offensive; you're responsible for how you use them. Never recommended automatically. Those marked huihui_ai are community builds.")
+                    Text("These models have had their refusals reduced or removed, so they answer what others decline. They can be wrong or offensive; you're responsible for how you use them. Never picked for you automatically. Those marked huihui_ai are community builds.")
                         .font(.system(size: 11.5)).foregroundStyle(Theme.amber).fixedSize(horizontal: false, vertical: true)
                 }
 
-                LazyVStack(spacing: 10) {
-                    ForEach(shown) { ModelRow(model: $0) }
-                    if shown.isEmpty {
-                        Text(filter == .installed ? "No catalog models installed yet." : "No models match.")
-                            .foregroundStyle(Theme.dim).padding(30)
+                let list = shown
+                let top = topRated(list, on: app.specs, installed: app.installedNames, speed: app.estimate)
+                let others = list.filter { m in !top.contains { $0.id == m.id } }
+                if !top.isEmpty {
+                    SectionHeader(title: "Recommended models",
+                                  detail: "The best rated here that run well on this Mac. Ratings are LMArena scores; Est. means the model isn't on the leaderboard yet.")
+                    LazyVStack(spacing: 10) {
+                        ForEach(top) { ModelRow(model: $0) }
                     }
+                }
+                if !others.isEmpty {
+                    SectionHeader(title: top.isEmpty ? "Models" : "Other models", detail: nil)
+                    LazyVStack(spacing: 10) {
+                        ForEach(others) { ModelRow(model: $0) }
+                    }
+                }
+                if list.isEmpty {
+                    Text(filter == .installed ? "No catalog models installed yet." : "No models match.")
+                        .foregroundStyle(Theme.dim).padding(30)
                 }
 
                 if !app.otherInstalled.isEmpty && filter != .fits {
@@ -428,6 +441,20 @@ struct LibraryView: View {
             }
             .padding(.horizontal, 24).padding(.bottom, 24).padding(.top, 8)
         }
+    }
+}
+
+struct SectionHeader: View {
+    let title: String
+    let detail: String?
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(title).font(.system(size: 14, weight: .semibold))
+            if let detail {
+                Text(detail).font(.system(size: 11.5)).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(.top, 4)
     }
 }
 
@@ -594,7 +621,7 @@ struct ModelRow: View {
                 Text(model.summary).font(.system(size: 12)).foregroundStyle(.white.opacity(0.75)).lineLimit(2)
                 HStack(spacing: 5) {
                     ForEach(shownTags(model, est), id: \.self) { tagChip($0) }
-                    Text("\(model.id) · \(est.detail)").lineLimit(1)
+                    Text([model.id, model.ratingLabel, est.detail].filter { !$0.isEmpty }.joined(separator: " · ")).lineLimit(1)
                         .font(.system(size: 10.5, design: .monospaced)).foregroundStyle(Theme.dim.opacity(0.8))
                         .padding(.leading, 4)
                 }

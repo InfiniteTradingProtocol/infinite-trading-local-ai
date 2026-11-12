@@ -19,6 +19,22 @@ struct ModelInfo: Codable, Identifiable, Hashable {
     let rank: Int
     let tags: [String]
     let summary: String
+    /// Where rank comes from: a public leaderboard rating, the base model's, or an estimate.
+    var rating: Rating? = nil
+
+    struct Rating: Codable, Hashable {
+        let elo: Int?
+        let source: String?
+        let basis: String?
+    }
+
+    /// "Arena 1358", "Arena 1340 base" (the base model's score), "Est. 1310".
+    var ratingLabel: String {
+        guard let r = rating else { return "" }
+        if r.basis == "estimate" { return "Est. \(rank)" }
+        guard let elo = r.elo else { return "" }
+        return r.basis == "base" ? "Arena \(elo) base" : "Arena \(elo)"
+    }
 
     var title: String { "\(name) \(params)" }
     var names: Set<String> { Set([id] + aliases) }
@@ -126,12 +142,41 @@ func recommend(_ models: [ModelInfo], for s: MacSpecs, installed: Set<String> = 
         guard !pool.isEmpty else { continue }
         // Skip models that would be very slow here, but keep "slow" ones: on an
         // Intel CPU a readable 3B beats a fast but much weaker 1B.
-        if let speed, let best = pool.filter({ speed($0).tier > .veryslow }).max(by: { $0.rank < $1.rank }) {
+        // On Apple Silicon, a model that answers at a comfortable speed beats a
+        // better-rated one that crawls.
+        if let speed, let best = pool.filter({ speed($0).tier > .veryslow })
+            .max(by: { (comfortable($0, s, speed), $0.rank) < (comfortable($1, s, speed), $1.rank) }) {
             return best
         }
         return pool.max { $0.rank < $1.rank }
     }
     return nil
+}
+
+/// 1 when a model answers at a comfortable speed (7 tok/s, first word within 40 s)
+/// on Apple Silicon. Intel Macs rank by quality alone: there a readable 3B
+/// beats a fast but much weaker 1B.
+private func comfortable(_ m: ModelInfo, _ s: MacSpecs, _ speed: (ModelInfo) -> SpeedEstimate) -> Int {
+    s.appleSilicon && speed(m).tier >= .ok ? 1 : 0
+}
+
+/// The top of a list: the highest-rated models that run well on this Mac, those
+/// that fit fully on the GPU first, then those that answer at a comfortable speed. Chat-only models come last; uncensored ones
+/// only when they're all there is (the Uncensored tab). At most `count`.
+func topRated(_ models: [ModelInfo], on s: MacSpecs, installed: Set<String> = [], count: Int = 3,
+              speed: ((ModelInfo) -> SpeedEstimate)? = nil) -> [ModelInfo] {
+    let allUncensored = !models.isEmpty && models.allSatisfy(\.uncensored)
+    let runs = models.filter { m in
+        let have = !m.names.isDisjoint(with: installed)
+        guard fit(m, on: s, installed: have) >= .slow else { return false }
+        return have || speed.map { $0(m).tier > .veryslow } ?? true
+    }
+    // Like recommend(): models that fit fully on the GPU beat better-rated ones that spill.
+    let key = { (m: ModelInfo) in
+        (m.tags.contains("chat-only") ? 0 : 1, fit(m, on: s, installed: !m.names.isDisjoint(with: installed)).rawValue,
+         speed.map { comfortable(m, s, $0) } ?? 0, m.rank)
+    }
+    return Array(runs.filter { allUncensored || !$0.uncensored }.sorted { key($0) > key($1) }.prefix(count))
 }
 
 func formatGB(_ gb: Double) -> String {

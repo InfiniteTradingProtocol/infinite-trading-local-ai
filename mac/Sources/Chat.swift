@@ -265,6 +265,15 @@ struct ChatView: View {
         chat.target = preferred ?? targets.first
     }
 
+    /// The three best-rated catalog models installed in Ollama (never uncensored or chat only).
+    private func recommendedTargets(_ targets: [ChatTarget]) -> [ChatTarget] {
+        let rated = targets.compactMap { t -> (ChatTarget, Int)? in
+            guard t.api == .ollama, let m = app.models.first(where: { $0.names.contains(t.model) }), m.recommendable else { return nil }
+            return (t, m.rank)
+        }
+        return Array(rated.sorted { $0.1 > $1.1 }.prefix(3).map(\.0))
+    }
+
     private var empty: some View {
         VStack(spacing: 12) {
             Image(systemName: "bubble.left.and.bubble.right").font(.system(size: 34)).foregroundStyle(Theme.violet)
@@ -281,10 +290,17 @@ struct ChatView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
                 Menu {
-                    let servers = Array(NSOrderedSet(array: targets.map(\.server))) as? [String] ?? []
+                    let top = recommendedTargets(targets)
+                    let rest = targets.filter { !top.contains($0) }
+                    if !top.isEmpty {
+                        Section("Recommended models") {
+                            ForEach(top) { t in Button(t.model) { chat.target = t } }
+                        }
+                    }
+                    let servers = Array(NSOrderedSet(array: rest.map(\.server))) as? [String] ?? []
                     ForEach(servers, id: \.self) { server in
-                        Section(server) {
-                            ForEach(targets.filter { $0.server == server }) { t in
+                        Section(top.isEmpty ? server : "Other models · \(server)") {
+                            ForEach(rest.filter { $0.server == server }) { t in
                                 Button(t.model) { chat.target = t }
                             }
                         }
