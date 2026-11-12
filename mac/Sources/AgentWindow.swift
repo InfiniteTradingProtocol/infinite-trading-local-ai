@@ -5,6 +5,40 @@ import WebKit
 // file adds one thing it can't do from there: an https page may not call the
 // Ollama on this Mac, so its model requests are carried over by the app.
 
+/// The key that encrypts API keys saved in the Agent window. Held in one
+/// Keychain item named after this app; after an update macOS asks to allow it.
+enum AppKeychain {
+    static let name = "Infinite Agent Manager"
+
+    static func masterKey(service: String = name) throws -> Data {
+        var query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: "Saved API keys",
+        ]
+        var found: CFTypeRef?
+        var read = query
+        read[kSecReturnData as String] = true
+        let status = SecItemCopyMatching(read as CFDictionary, &found)
+        if status == errSecSuccess, let data = found as? Data { return data }
+        // Only a missing item is created: a refused read must never replace saved keys.
+        guard status == errSecItemNotFound else { throw Ollama.Failure("Keychain access wasn't allowed.") }
+        var key = Data(count: 32)
+        guard key.withUnsafeMutableBytes({ SecRandomCopyBytes(kSecRandomDefault, 32, $0.baseAddress!) }) == errSecSuccess else {
+            throw Ollama.Failure("Couldn't create a key.")
+        }
+        query[kSecValueData as String] = key
+        query[kSecAttrLabel as String] = service
+        query[kSecAttrDescription as String] = "Encrypts API keys saved in the Infinite Agent window"
+        guard SecItemAdd(query as CFDictionary, nil) == errSecSuccess else { throw Ollama.Failure("Couldn't save to the Keychain.") }
+        return key
+    }
+
+    static func delete(service: String) {
+        SecItemDelete([kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service] as CFDictionary)
+    }
+}
+
 enum AgentBridge {
     static let home = URL(string: "https://www.infinitetrading.io/agent-app")!
     private static let hosts: Set<String> = ["www.infinitetrading.io", "infinitetrading.io"]
@@ -27,6 +61,7 @@ enum AgentBridge {
           const local = /^http:\\/\\/(?:localhost|127\\.0\\.0\\.1)(?::\\d+)?\\/(api\\/[a-z]+)$/;
           const post = (m) => window.webkit.messageHandlers.ilaBridge.postMessage(m);
           const open = new Map();
+          const keys = new Map();
           let next = 0;
           const page = window.fetch.bind(window);
           window.__ila = Object.assign(\(settings), {
@@ -35,6 +70,20 @@ enum AgentBridge {
               if (c) c.resolve(new Response(c.body, { status, headers: { "Content-Type": "application/x-ndjson" } }));
             },
             push(id, text) { open.get(id)?.stream.enqueue(new TextEncoder().encode(text)); },
+            masterKey() {
+              const id = ++next;
+              return new Promise((resolve, reject) => {
+                keys.set(id, { resolve, reject });
+                post({ id, masterKey: true });
+              });
+            },
+            key(id, value) {
+              const k = keys.get(id);
+              if (!k) return;
+              keys.delete(id);
+              if (value) k.resolve(value);
+              else k.reject(new Error("Allow Infinite Agent Manager in the Keychain prompt to use your saved keys."));
+            },
             end(id, error) {
               const c = open.get(id);
               if (!c) return;
@@ -109,6 +158,14 @@ final class AgentWindow: NSObject, WKScriptMessageHandler, WKNavigationDelegate,
               let m = message.body as? [String: Any], let id = m["id"] as? Int else { return }
         if m["cancel"] != nil {
             requests.removeValue(forKey: id)?.cancel()
+            return
+        }
+        if m["masterKey"] != nil {
+            // Off the main thread: this waits for the user if macOS shows a prompt.
+            Task.detached { [weak self] in
+                let key = try? AppKeychain.masterKey()
+                await self?.call("key", id, key?.base64EncodedString())
+            }
             return
         }
         let path = m["path"] as? String ?? ""

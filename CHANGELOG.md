@@ -6,6 +6,13 @@ The current version is always the one in `mac/`, `catalog/` and `tests/`. From
 [`archive/<version>/`](archive). The 0.2.0 source was checked to rebuild its shipped
 executable exactly (normalized).
 
+## 0.9.1 — 2026-11-09
+
+### Changed
+- API keys saved in the Agent window are protected by a Keychain item named
+  **Infinite Agent Manager**. After an update macOS asks you to allow it; you
+  don't re-enter your keys. Local models need no key and no Keychain access.
+
 ## 0.9.0 — 2026-11-09 · Agent window
 
 ### Added

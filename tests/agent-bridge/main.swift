@@ -15,6 +15,12 @@ for (p, m) in [("api/delete", "DELETE"), ("api/pull", "POST"), ("api/create", "P
     check(!AgentBridge.allowed(path: p, method: m), "\(m) \(p) is refused")
 }
 
+let service = "Infinite Agent Manager Test \(UUID().uuidString)"
+let first = try! AppKeychain.masterKey(service: service)
+check(first.count == 32, "creates a 32-byte key")
+check(try! AppKeychain.masterKey(service: service) == first, "the same key comes back")
+AppKeychain.delete(service: service)
+
 let model = ProcessInfo.processInfo.environment["ILA_TEST_MODEL"] ?? "llama3.2:1b"
 let app = NSApplication.shared
 app.setActivationPolicy(.prohibited)
@@ -58,6 +64,10 @@ Task { @MainActor in
     try { const r = await p; const rd = r.body.getReader(); for (;;) { const {done} = await rd.read(); if (done) return 'finished'; } } catch (e) { return 'stopped'; }
     """
     check(await js(abort) == "stopped", "Stop cancels the request")
+
+    let key = await js("return atob(await window.__ila.masterKey()).length")
+    check(key == "32", "the page gets a 32-byte key from the Keychain (\(key))")
+    AppKeychain.delete(service: AppKeychain.name)
 
     await wait(4)
     let page = await js("return document.body.innerText.slice(0, 2000)")
